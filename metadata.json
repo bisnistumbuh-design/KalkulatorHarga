@@ -1,0 +1,6 @@
+{
+  "name": "Kalkulator Harga Jual Paket Data",
+  "description": "Aplikasi kalkulator penentuan harga jual paket data otomatis berdasarkan masa aktif dan pembulatan kustom dari file Excel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

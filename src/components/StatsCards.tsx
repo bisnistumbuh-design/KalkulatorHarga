@@ -1,0 +1,98 @@
+import React from 'react';
+import { CalculatedPackage } from '../types';
+import { formatRupiah } from '../utils/calculator';
+
+interface StatsCardsProps {
+  packages: CalculatedPackage[];
+  executionTimeMs?: number;
+  fileName?: string;
+}
+
+export const StatsCards: React.FC<StatsCardsProps> = ({
+  packages,
+  executionTimeMs,
+  fileName,
+}) => {
+  if (packages.length === 0) return null;
+
+  const total = packages.length;
+  const totalCost = packages.reduce((acc, p) => acc + p.costPrice, 0);
+  const totalSelling = packages.reduce((acc, p) => acc + p.sellingPrice, 0);
+  const totalProfit = packages.reduce((acc, p) => acc + p.actualProfit, 0);
+
+  const avgCost = totalCost / total;
+  const avgSelling = totalSelling / total;
+  const avgProfit = totalProfit / total;
+
+  const countTier1 = packages.filter((p) => p.tier === 'tier1').length;
+  const countTier2 = packages.filter((p) => p.tier === 'tier2').length;
+  const countTier3 = packages.filter((p) => p.tier === 'tier3').length;
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+        <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          Processing Metrics
+        </h2>
+        {executionTimeMs !== undefined && (
+          <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">
+            {executionTimeMs} ms • Berhasil
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-2.5">
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-slate-600">Total Paket Dimuat</span>
+          <span className="font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">
+            {total}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-slate-600">Rata-rata Harga Modal</span>
+          <span className="font-mono font-medium text-slate-700">
+            {formatRupiah(avgCost)}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-slate-600">Rata-rata Harga Jual</span>
+          <span className="font-mono font-bold text-indigo-700">
+            {formatRupiah(avgSelling)}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-slate-600">Rata-rata Margin Riil</span>
+          <span className="font-mono font-bold text-emerald-600">
+            +{formatRupiah(avgProfit)}
+          </span>
+        </div>
+
+        <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[11px]">
+          <span className="text-slate-500">Distribusi Hari:</span>
+          <div className="flex items-center gap-1 font-mono text-[10px]">
+            <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-1 py-0.2 rounded" title="<= 3 Hari">
+              {countTier1} ≤3hr
+            </span>
+            <span className="bg-blue-50 text-blue-700 border border-blue-100 px-1 py-0.2 rounded" title="4-14 Hari">
+              {countTier2} 4-14hr
+            </span>
+            <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-1 py-0.2 rounded" title="> 14 Hari">
+              {countTier3} &gt;14hr
+            </span>
+          </div>
+        </div>
+
+        {fileName && (
+          <div className="text-[10px] text-slate-400 truncate pt-1 border-t border-slate-100 flex items-center justify-between">
+            <span className="truncate">File: {fileName}</span>
+            <span className="text-emerald-600 font-semibold shrink-0">Status: Ready</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
