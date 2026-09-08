@@ -34,7 +34,7 @@ export default function App() {
     const startTime = performance.now();
 
     const sampleCalculated = SAMPLE_PACKAGES_RAW.map((pkg, idx) =>
-      calculateSinglePackage(`sample-${idx + 1}`, pkg.name, pkg.active, pkg.cost)
+      calculateSinglePackage(`sample-${idx + 1}`, pkg.name, pkg.active, pkg.cost, pkg.isPerdana)
     );
 
     const time = Math.round(performance.now() - startTime);
@@ -44,7 +44,7 @@ export default function App() {
     setIsLoading(false);
 
     if (showToast) {
-      showNotification('12 paket sampel berhasil dimuat!');
+      showNotification('12 paket & kartu perdana sampel berhasil dimuat!');
     }
   };
 
@@ -68,17 +68,18 @@ export default function App() {
     id: string,
     name: string,
     activeDays: string | number,
-    costPrice: string | number
+    costPrice: string | number,
+    isPerdana?: boolean
   ) => {
     setPackages((prev) =>
       prev.map((pkg) => {
         if (pkg.id === id) {
-          return calculateSinglePackage(id, name, activeDays, costPrice);
+          return calculateSinglePackage(id, name, activeDays, costPrice, isPerdana);
         }
         return pkg;
       })
     );
-    showNotification(`Paket "${name}" berhasil diperbarui!`);
+    showNotification(`"${name}" berhasil diperbarui!`);
   };
 
   const handleDeleteItem = (id: string) => {

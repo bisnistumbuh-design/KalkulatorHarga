@@ -24,9 +24,10 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
   const avgSelling = totalSelling / total;
   const avgProfit = totalProfit / total;
 
-  const countTier1 = packages.filter((p) => p.tier === 'tier1').length;
-  const countTier2 = packages.filter((p) => p.tier === 'tier2').length;
-  const countTier3 = packages.filter((p) => p.tier === 'tier3').length;
+  const countTier1 = packages.filter((p) => !p.isPerdana && p.tier === 'tier1').length;
+  const countTier2 = packages.filter((p) => !p.isPerdana && p.tier === 'tier2').length;
+  const countTier3 = packages.filter((p) => !p.isPerdana && p.tier === 'tier3').length;
+  const countPerdana = packages.filter((p) => p.isPerdana || p.tier === 'perdana').length;
 
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
@@ -71,8 +72,13 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
         </div>
 
         <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[11px]">
-          <span className="text-slate-500">Distribusi Hari:</span>
-          <div className="flex items-center gap-1 font-mono text-[10px]">
+          <span className="text-slate-500">Kategori & Durasi:</span>
+          <div className="flex flex-wrap items-center gap-1 font-mono text-[10px]">
+            {countPerdana > 0 && (
+              <span className="bg-purple-50 text-purple-700 border border-purple-200 px-1 py-0.2 rounded font-semibold" title="Penjualan Perdana (+Rp 5.000)">
+                {countPerdana} Perdana (+5rb)
+              </span>
+            )}
             <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-1 py-0.2 rounded" title="<= 3 Hari">
               {countTier1} ≤3hr
             </span>

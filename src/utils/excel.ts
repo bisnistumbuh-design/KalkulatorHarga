@@ -74,6 +74,7 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
     const colA = row[0]; // Kolom A: Nama Paket
     const colB = row[1]; // Kolom B: Masa Aktif
     const colC = row[2]; // Kolom C: Harga Modal
+    const colD = row[3]; // Kolom D (Opsional): Jenis / Tipe (misal: "Perdana" atau "Paket")
 
     // Lewati jika seluruh kolom kosong
     if (
@@ -95,7 +96,8 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
       `row-${i + 1}-${Date.now()}`,
       packageName,
       colB,
-      colC
+      colC,
+      colD
     );
 
     packages.push(calculated);
@@ -119,9 +121,10 @@ export function exportToExcel(packages: CalculatedPackage[], filename = 'Daftar_
   const exportData = packages.map((pkg, idx) => ({
     'No': idx + 1,
     'Nama Paket': pkg.name,
+    'Jenis Produk': pkg.isPerdana ? 'Kartu Perdana' : 'Paket Data',
     'Masa Aktif': pkg.activeDaysFormatted,
     'Harga Modal (Rp)': pkg.costPrice,
-    'Margin Standar (Rp)': pkg.margin,
+    'Margin Keuntungan (Rp)': pkg.margin,
     'Modal + Untung (Rp)': pkg.totalBeforeRounding,
     'Sisa Ratusan (%1000)': pkg.remainder,
     'Arah Pembulatan': pkg.roundingDirection === 'down' ? 'Bawah (<=300)' : pkg.roundingDirection === 'up' ? 'Atas (>300)' : 'Pas (0)',
@@ -135,9 +138,10 @@ export function exportToExcel(packages: CalculatedPackage[], filename = 'Daftar_
   worksheet['!cols'] = [
     { wch: 6 },  // No
     { wch: 35 }, // Nama Paket
+    { wch: 16 }, // Jenis Produk
     { wch: 14 }, // Masa Aktif
     { wch: 18 }, // Harga Modal
-    { wch: 18 }, // Margin Standar
+    { wch: 22 }, // Margin Keuntungan
     { wch: 20 }, // Modal + Untung
     { wch: 18 }, // Sisa Ratusan
     { wch: 22 }, // Arah Pembulatan
@@ -155,20 +159,23 @@ export function exportToExcel(packages: CalculatedPackage[], filename = 'Daftar_
  */
 export function downloadTemplateExcel(): void {
   const templateData = [
-    ['Nama Paket', 'Masa Aktif', 'Harga Modal'],
-    ['Telkomsel InternetMAX 10GB', '3 hari', 18500],
-    ['Indosat Freedom Harian 7GB', '7hr', 23800],
-    ['XL Xtra Combo Flex M 12GB', '14 Hari', 31200],
-    ['Tri AlwaysOn AON 6GB', '30 hari', 38600],
-    ['Smartfren Kuota Nonstop 18GB', '30', 44600],
-    ['By.U 10GB 1 Hari', '1hr', 9300],
+    ['Nama Paket', 'Masa Aktif', 'Harga Modal', 'Jenis (Opsional)'],
+    ['Perdana Telkomsel Kuota 14GB Segel', '30 hari', 35000, 'Perdana'],
+    ['Perdana Indosat Freedom 20GB', '30hr', 42000, 'Perdana'],
+    ['Telkomsel InternetMAX 10GB', '3 hari', 18500, 'Paket Data'],
+    ['Indosat Freedom Harian 7GB', '7hr', 23800, 'Paket Data'],
+    ['XL Xtra Combo Flex M 12GB', '14 Hari', 31200, 'Paket Data'],
+    ['Tri AlwaysOn AON 6GB', '30 hari', 38600, 'Paket Data'],
+    ['Smartfren Kuota Nonstop 18GB', '30', 44600, 'Paket Data'],
+    ['By.U 10GB 1 Hari', '1hr', 9300, 'Paket Data'],
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(templateData);
   worksheet['!cols'] = [
-    { wch: 32 }, // Kolom A: Nama Paket
+    { wch: 35 }, // Kolom A: Nama Paket
     { wch: 16 }, // Kolom B: Masa Aktif
     { wch: 16 }, // Kolom C: Harga Modal
+    { wch: 18 }, // Kolom D: Jenis (Opsional)
   ];
 
   const workbook = XLSX.utils.book_new();

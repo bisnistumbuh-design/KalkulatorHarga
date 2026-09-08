@@ -6,6 +6,7 @@ import {
   Check,
   Trash2,
   Printer,
+  FileText,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -18,6 +19,7 @@ import {
 import { CalculatedPackage, ActiveFilterTier } from '../types';
 import { exportToExcel } from '../utils/excel';
 import { calculateSinglePackage } from '../utils/calculator';
+import { exportToPdf, printTableToPrinter, PrintMode } from '../utils/pdf';
 
 interface ResultsTableProps {
   packages: CalculatedPackage[];
@@ -27,7 +29,8 @@ interface ResultsTableProps {
     id: string,
     name: string,
     activeDays: string | number,
-    costPrice: string | number
+    costPrice: string | number,
+    isPerdana?: boolean
   ) => void;
   onDeleteMultiple?: (ids: string[]) => void;
 }
@@ -56,11 +59,18 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const [itemToDelete, setItemToDelete] = useState<CalculatedPackage | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
+  // Print & PDF Modal states
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printMode, setPrintMode] = useState<PrintMode>('full');
+  const [printDataScope, setPrintDataScope] = useState<'all' | 'filtered'>('all');
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+
   // Edit Modal state
   const [editingPackage, setEditingPackage] = useState<CalculatedPackage | null>(null);
   const [editName, setEditName] = useState('');
   const [editActiveDays, setEditActiveDays] = useState('');
   const [editCost, setEditCost] = useState('');
+  const [editIsPerdana, setEditIsPerdana] = useState(false);
 
   // Filter & Search
   const filteredPackages = useMemo(() => {
@@ -70,9 +80,12 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
       if (!matchesSearch) return false;
 
       // Filter tier
-      if (filterTier === 'tier1' && pkg.tier !== 'tier1') return false;
-      if (filterTier === 'tier2' && pkg.tier !== 'tier2') return false;
-      if (filterTier === 'tier3' && pkg.tier !== 'tier3') return false;
+      if (filterTier === 'perdana') {
+        return pkg.isPerdana || pkg.tier === 'perdana';
+      }
+      if (filterTier === 'tier1' && (pkg.tier !== 'tier1' || pkg.isPerdana)) return false;
+      if (filterTier === 'tier2' && (pkg.tier !== 'tier2' || pkg.isPerdana)) return false;
+      if (filterTier === 'tier3' && (pkg.tier !== 'tier3' || pkg.isPerdana)) return false;
 
       return true;
     });
@@ -156,6 +169,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     setEditName(pkg.name);
     setEditActiveDays(String(pkg.activeDays));
     setEditCost(String(pkg.costPrice));
+    setEditIsPerdana(pkg.isPerdana ?? false);
   };
 
   const previewEditedPackage = useMemo(() => {
@@ -166,16 +180,17 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
       editingPackage.id,
       editName.trim(),
       editActiveDays,
-      editCost
+      editCost,
+      editIsPerdana
     );
-  }, [editingPackage, editName, editActiveDays, editCost]);
+  }, [editingPackage, editName, editActiveDays, editCost, editIsPerdana]);
 
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPackage || !onEditItem) return;
     if (!editName.trim() || !editActiveDays || !editCost) return;
 
-    onEditItem(editingPackage.id, editName.trim(), editActiveDays, editCost);
+    onEditItem(editingPackage.id, editName.trim(), editActiveDays, editCost, editIsPerdana);
     setEditingPackage(null);
   };
 
@@ -199,13 +214,14 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
 
   const handleCopyWhatsApp = () => {
     const lines = [
-      '*DAFTAR HARGA JUAL PAKET DATA*',
+      '*DAFTAR HARGA JUAL PAKET DATA & PERDANA*',
       `Update: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}`,
       '=========================',
     ];
 
     sortedPackages.forEach((pkg, i) => {
-      lines.push(`${i + 1}. *${pkg.name}* (${pkg.activeDaysFormatted}) -> *${pkg.sellingPriceFormatted}*`);
+      const tag = pkg.isPerdana ? '⭐ [PERDANA] ' : '';
+      lines.push(`${i + 1}. ${tag}*${pkg.name}* (${pkg.activeDaysFormatted}) -> *${pkg.sellingPriceFormatted}*`);
     });
 
     lines.push('=========================');
@@ -216,8 +232,35 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     setTimeout(() => setCopiedWA(false), 2500);
   };
 
+  const getPackagesForPrint = () => {
+    return printDataScope === 'filtered' && filteredPackages.length > 0
+      ? sortedPackages
+      : packages;
+  };
+
+  const handleTriggerPrinter = () => {
+    const dataToPrint = getPackagesForPrint();
+    printTableToPrinter(dataToPrint, printMode);
+    setShowPrintModal(false);
+  };
+
+  const handleTriggerPdf = () => {
+    setIsPdfGenerating(true);
+    try {
+      const dataToPrint = getPackagesForPrint();
+      exportToPdf(dataToPrint, printMode);
+      setTimeout(() => {
+        setIsPdfGenerating(false);
+        setShowPrintModal(false);
+      }, 400);
+    } catch (err) {
+      console.error('Error generating PDF', err);
+      setIsPdfGenerating(false);
+    }
+  };
+
   const handlePrint = () => {
-    window.print();
+    setShowPrintModal(true);
   };
 
   return (
@@ -251,6 +294,19 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               }`}
             >
               Semua ({packages.length})
+            </button>
+            <button
+              type="button"
+              id="filter-perdana"
+              onClick={() => setFilterTier('perdana')}
+              className={`px-1.5 py-0.5 rounded font-medium transition-all ${
+                filterTier === 'perdana'
+                  ? 'bg-purple-600 text-white shadow-2xs font-bold'
+                  : 'text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100'
+              }`}
+              title="Penjualan Perdana (Margin Rp 5.000 dari modal)"
+            >
+              Perdana ({packages.filter((p) => p.isPerdana || p.tier === 'perdana').length})
             </button>
             <button
               type="button"
@@ -345,11 +401,11 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             type="button"
             id="btn-print-table"
             onClick={handlePrint}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded border border-slate-300 bg-white text-slate-700 text-[11px] font-medium hover:bg-slate-50 transition-colors shadow-2xs"
-            title="Cetak tabel harga"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 text-[11px] font-semibold hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+            title="Cetak ke Printer atau Convert ke PDF"
           >
-            <Printer className="w-3 h-3 text-slate-500" />
-            <span className="hidden sm:inline">Cetak</span>
+            <Printer className="w-3 h-3 text-indigo-600" />
+            <span>Cetak / PDF</span>
           </button>
 
           <button
@@ -467,12 +523,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             ) : (
               sortedPackages.map((pkg, idx) => {
                 const isSelected = selectedIds.has(pkg.id);
-                const tierColor =
-                  pkg.tier === 'tier1'
-                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                    : pkg.tier === 'tier2'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                const tierColor = pkg.isPerdana
+                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                  : pkg.tier === 'tier1'
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                  : pkg.tier === 'tier2'
+                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200';
 
                 return (
                   <tr
@@ -503,9 +560,18 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
 
                     {/* Nama Paket */}
                     <td className="py-1.5 px-3 text-xs text-slate-800">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-medium text-slate-900">{pkg.name}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">
+                        {pkg.isPerdana && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                            Perdana (+5rb)
+                          </span>
+                        )}
+                        <span
+                          className={`text-[10px] font-mono ${
+                            pkg.isPerdana ? 'text-purple-700 font-semibold' : 'text-slate-400'
+                          }`}
+                        >
                           (+{pkg.marginFormatted})
                         </span>
                       </div>
@@ -716,6 +782,30 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                 </div>
               </div>
 
+              {/* Jenis Produk: Perdana Toggle */}
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-purple-50 border border-purple-200">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="edit-is-perdana"
+                    checked={editIsPerdana}
+                    onChange={(e) => setEditIsPerdana(e.target.checked)}
+                    className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer"
+                  />
+                  <div>
+                    <label htmlFor="edit-is-perdana" className="text-xs font-bold text-purple-900 cursor-pointer block">
+                      Penjualan Perdana
+                    </label>
+                    <span className="text-[10px] text-purple-600">
+                      Terapkan keuntungan margin tetap Rp 5.000 dari modal
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-purple-700 bg-white px-2 py-0.5 rounded border border-purple-200 shadow-2xs shrink-0">
+                  +Rp 5.000
+                </span>
+              </div>
+
               {/* Live Calculation Preview */}
               {previewEditedPackage && (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs space-y-1.5 font-sans">
@@ -725,14 +815,20 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                   <div className="flex items-center justify-between text-slate-600 text-[11px]">
                     <span>
                       Margin (
-                      {previewEditedPackage.tier === 'tier1'
+                      {previewEditedPackage.isPerdana
+                        ? 'Kartu Perdana'
+                        : previewEditedPackage.tier === 'tier1'
                         ? '≤3 hari'
                         : previewEditedPackage.tier === 'tier2'
                         ? '4-14 hari'
                         : '>14 hari'}
                       ):
                     </span>
-                    <span className="font-mono font-semibold text-slate-800">
+                    <span
+                      className={`font-mono font-semibold ${
+                        previewEditedPackage.isPerdana ? 'text-purple-700' : 'text-slate-800'
+                      }`}
+                    >
                       +{previewEditedPackage.marginFormatted}
                     </span>
                   </div>
@@ -921,6 +1017,164 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Ya, Hapus Terpilih</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Cetak ke Printer atau Convert ke PDF */}
+      {showPrintModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <Printer className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-tight">
+                    Cetak &amp; Konversi PDF
+                  </h4>
+                  <p className="text-[10px] text-slate-500">
+                    Koneksi langsung ke printer fisik atau simpan format PDF
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded transition-colors"
+                title="Tutup dialog"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 space-y-3.5">
+              {/* Pilihan 1: Tipe Format Dokumen */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
+                  Format / Tipe Dokumen
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPrintMode('full')}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      printMode === 'full'
+                        ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600'
+                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-slate-800">
+                        Laporan Lengkap
+                      </span>
+                      {printMode === 'full' && (
+                        <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      Internal Kasir: Modal, Margin, Pembulatan, Harga Jual &amp; Keuntungan
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPrintMode('customer')}
+                    className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
+                      printMode === 'customer'
+                        ? 'border-emerald-600 bg-emerald-50/70 ring-1 ring-emerald-600'
+                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-slate-800">
+                        Katalog Pelanggan
+                      </span>
+                      {printMode === 'customer' && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-tight">
+                      Display Toko: Nama Paket, Masa Aktif, &amp; Harga Jual (tanpa modal)
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Pilihan 2: Cakupan Data */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
+                  Cakupan Data Paket
+                </label>
+                <div className="flex flex-wrap items-center gap-3 text-xs">
+                  <label className="flex items-center gap-1.5 text-slate-700 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="print-scope"
+                      checked={printDataScope === 'all'}
+                      onChange={() => setPrintDataScope('all')}
+                      className="text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span>Semua Paket ({packages.length})</span>
+                  </label>
+                  {filteredPackages.length !== packages.length && (
+                    <label className="flex items-center gap-1.5 text-slate-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="print-scope"
+                        checked={printDataScope === 'filtered'}
+                        onChange={() => setPrintDataScope('filtered')}
+                        className="text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span>Hasil Filter ({sortedPackages.length})</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Info Box */}
+              <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-200 text-[11px] text-slate-600 flex items-center justify-between">
+                <span>
+                  Target:{' '}
+                  <strong className="text-slate-800">
+                    {getPackagesForPrint().length} paket
+                  </strong>{' '}
+                  ({printMode === 'customer' ? 'Daftar Pelanggan' : 'Lengkap Internal'})
+                </span>
+                <span className="text-[10px] text-slate-400">Ukuran: A4 Portrait</span>
+              </div>
+
+              {/* Action Buttons: Printer vs PDF */}
+              <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-100">
+                {/* Tombol Cetak ke Printer */}
+                <button
+                  type="button"
+                  id="btn-confirm-print"
+                  onClick={handleTriggerPrinter}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 hover:border-slate-400 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                  title="Cetak langsung ke mesin printer yang terhubung"
+                >
+                  <Printer className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Cetak ke Printer</span>
+                </button>
+
+                {/* Tombol Convert ke PDF */}
+                <button
+                  type="button"
+                  id="btn-confirm-pdf"
+                  onClick={handleTriggerPdf}
+                  disabled={isPdfGenerating}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                  title="Unduh dokumen dalam bentuk file PDF (.pdf)"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>{isPdfGenerating ? 'Membuat PDF...' : 'Convert ke PDF'}</span>
                 </button>
               </div>
             </div>

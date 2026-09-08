@@ -11,22 +11,34 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
   const [packageName, setPackageName] = useState('');
   const [activeDaysInput, setActiveDaysInput] = useState('3 hari');
   const [costInput, setCostInput] = useState('48800');
+  const [isPerdana, setIsPerdana] = useState(false);
+
+  // Auto-detect Perdana when typing in name
+  const handleNameChange = (val: string) => {
+    setPackageName(val);
+    const lower = val.toLowerCase();
+    if (lower.includes('perdana') || /\bsp\b/i.test(lower) || lower.includes('starter pack')) {
+      setIsPerdana(true);
+    }
+  };
 
   // Instant calculation for live preview
   const previewPkg = calculateSinglePackage(
     'preview',
-    packageName || 'Contoh Paket Data',
+    packageName || (isPerdana ? 'Contoh Kartu Perdana' : 'Contoh Paket Data'),
     activeDaysInput,
-    costInput
+    costInput,
+    isPerdana
   );
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     const finalPkg = calculateSinglePackage(
       `manual-${Date.now()}`,
-      packageName || 'Paket Input Manual',
+      packageName || (isPerdana ? 'Kartu Perdana Input Manual' : 'Paket Input Manual'),
       activeDaysInput,
-      costInput
+      costInput,
+      isPerdana
     );
     onAddPackage(finalPkg);
     setPackageName('');
@@ -39,23 +51,53 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
           <Calculator className="w-3.5 h-3.5 text-indigo-600" />
           Kalkulator Cepat (Cek Manual)
         </h3>
-        <span className="text-[10px] text-slate-400">
-          Uji coba satuan
-        </span>
+        {/* Toggle Penjualan Perdana */}
+        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
+          <button
+            type="button"
+            id="toggle-type-paket"
+            onClick={() => setIsPerdana(false)}
+            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all cursor-pointer ${
+              !isPerdana
+                ? 'bg-white text-indigo-700 shadow-2xs'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Paket Data
+          </button>
+          <button
+            type="button"
+            id="toggle-type-perdana"
+            onClick={() => setIsPerdana(true)}
+            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+              isPerdana
+                ? 'bg-purple-600 text-white shadow-2xs'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <span>Perdana</span>
+            <span className="text-[9px] opacity-90">(+5rb)</span>
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleAdd} className="space-y-2.5">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-              Nama Paket
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center justify-between">
+              <span>Nama Paket / Produk</span>
+              {isPerdana && (
+                <span className="text-[9px] text-purple-700 font-bold bg-purple-50 px-1 rounded border border-purple-200">
+                  Perdana
+                </span>
+              )}
             </label>
             <input
               type="text"
               id="quick-package-name"
               value={packageName}
-              onChange={(e) => setPackageName(e.target.value)}
-              placeholder="misal: Telkomsel 14GB"
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder={isPerdana ? 'misal: Perdana Telkomsel 14GB' : 'misal: Telkomsel 14GB'}
               className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
@@ -99,8 +141,8 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
           <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] text-slate-600">
             <span>Modal: {previewPkg.costPriceFormatted}</span>
             <span className="text-slate-400">+</span>
-            <span className="text-indigo-700 font-semibold">
-              Margin: {previewPkg.marginFormatted}
+            <span className={`font-semibold ${isPerdana ? 'text-purple-700 bg-purple-50 px-1 py-0.5 rounded border border-purple-200' : 'text-indigo-700'}`}>
+              Margin: {previewPkg.marginFormatted} {isPerdana && '(Perdana)'}
             </span>
             <span className="text-slate-400">=</span>
             <span className="font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">

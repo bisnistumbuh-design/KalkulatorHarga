@@ -1,1 +1,36 @@
 @import "tailwindcss";
+
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  header,
+  nav,
+  #banner-summary,
+  #upload-card,
+  #manual-input-card,
+  #search-table,
+  #btn-copy-wa,
+  #btn-export-excel,
+  #btn-print-table,
+  #btn-clear-table,
+  #btn-delete-selected,
+  .no-print,
+  button {
+    display: none !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 11pt !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 8px !important;
+  }
+}

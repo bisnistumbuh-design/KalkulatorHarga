@@ -2,7 +2,10 @@ export interface RawPackageRow {
   rawName: any;
   rawActiveDays: any;
   rawCostPrice: any;
+  rawIsPerdana?: any;
 }
+
+export type ProductType = 'paket' | 'perdana';
 
 export interface CalculatedPackage {
   id: string;
@@ -11,7 +14,7 @@ export interface CalculatedPackage {
   activeDaysFormatted: string; // "X hr"
   costPrice: number; // Harga Modal
   costPriceFormatted: string; // "Rp XX.XXX"
-  margin: number; // Rp 2.000 / 2.500 / 3.000
+  margin: number; // Rp 2.000 / 2.500 / 3.000 / 5.000 (Perdana)
   marginFormatted: string;
   totalBeforeRounding: number; // Modal + Untung
   totalBeforeRoundingFormatted: string; // "Rp XX.XXX"
@@ -22,7 +25,8 @@ export interface CalculatedPackage {
   roundingDiff: number; // sellingPrice - totalBeforeRounding
   actualProfit: number; // sellingPrice - costPrice
   actualProfitFormatted: string;
-  tier: 'tier1' | 'tier2' | 'tier3'; // <=3hr, 4-14hr, >14hr
+  tier: 'tier1' | 'tier2' | 'tier3' | 'perdana'; // <=3hr, 4-14hr, >14hr, atau perdana (+5rb)
+  isPerdana: boolean; // Penjualan Perdana flag (margin Rp 5.000)
 }
 
-export type ActiveFilterTier = 'all' | 'tier1' | 'tier2' | 'tier3';
+export type ActiveFilterTier = 'all' | 'tier1' | 'tier2' | 'tier3' | 'perdana';

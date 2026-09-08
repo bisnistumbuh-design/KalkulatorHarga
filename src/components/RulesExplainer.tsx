@@ -22,20 +22,33 @@ export const RulesExplainer: React.FC = () => {
       </div>
 
       <div className="space-y-2.5 text-xs">
-        {/* Rule 1: Margin */}
+        {/* Rule 1: Margin Paket Data */}
         <div className="border-l-2 border-indigo-500 pl-2.5 py-0.5">
           <div className="font-semibold text-slate-800 text-[11px]">
-            1. Margin Keuntungan (FR-03)
+            1. Margin Paket Data Biasa (FR-03)
           </div>
           <div className="text-[10px] text-slate-500 font-mono mt-0.5">
             ≤ 3 Hari: <span className="text-indigo-700 font-bold">+Rp 2.000</span> | 4-14 Hari: <span className="text-indigo-700 font-bold">+Rp 2.500</span> | &gt; 14 Hari: <span className="text-indigo-700 font-bold">+Rp 3.000</span>
           </div>
         </div>
 
-        {/* Rule 2: Pembulatan */}
+        {/* Rule 2: Penjualan Perdana */}
+        <div className="border-l-2 border-purple-500 pl-2.5 py-0.5">
+          <div className="font-semibold text-slate-800 text-[11px] flex items-center justify-between">
+            <span>2. Penjualan Perdana (Margin Khusus)</span>
+            <span className="text-[9px] font-bold text-purple-700 bg-purple-50 px-1 rounded border border-purple-200">
+              Baru
+            </span>
+          </div>
+          <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+            Kartu Perdana: <span className="text-purple-700 font-bold">+Rp 5.000</span> dari harga modal (tetap berlaku pembulatan ribuan)
+          </div>
+        </div>
+
+        {/* Rule 3: Pembulatan */}
         <div className="border-l-2 border-amber-500 pl-2.5 py-0.5">
           <div className="font-semibold text-slate-800 text-[11px]">
-            2. Pembulatan Kustom Ribuan (FR-04)
+            3. Pembulatan Kustom Ribuan (FR-04)
           </div>
           <div className="text-[10px] text-slate-500 font-mono mt-0.5">
             Sisa ratusan ≤ 300: <span className="text-amber-700 font-semibold">Bawah</span> | &gt; 300: <span className="text-emerald-700 font-semibold">Atas</span> (ke kelipatan 1.000)
@@ -49,23 +62,30 @@ export const RulesExplainer: React.FC = () => {
             Contoh Penerapan:
           </div>
           <div className="space-y-1.5 font-mono text-[10px]">
-            <div className="flex items-center justify-between bg-white p-1.5 rounded border border-slate-200">
-              <span>Modal Rp 51.300 (sisa 300)</span>
-              <div className="flex items-center gap-1 text-slate-800 font-bold">
-                <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
-                <span>Rp 51.000 (Turun)</span>
+            <div className="flex items-center justify-between bg-white p-1.5 rounded border border-purple-200">
+              <span className="text-purple-900 font-medium">Perdana: Modal Rp 35.400 (+5rb = 40.400)</span>
+              <div className="flex items-center gap-1 text-purple-800 font-bold">
+                <ArrowRight className="w-2.5 h-2.5 text-purple-400" />
+                <span>Rp 41.000 (Naik)</span>
               </div>
             </div>
             <div className="flex items-center justify-between bg-white p-1.5 rounded border border-slate-200">
-              <span>Modal Rp 51.600 (sisa 600)</span>
+              <span>Paket 3hr: Modal Rp 18.200 (+2rb = 20.200)</span>
               <div className="flex items-center gap-1 text-slate-800 font-bold">
                 <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
-                <span>Rp 52.000 (Naik)</span>
+                <span>Rp 20.000 (Turun)</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between bg-white p-1.5 rounded border border-slate-200">
+              <span>Paket 30hr: Modal Rp 51.600 (+3rb = 54.600)</span>
+              <div className="flex items-center gap-1 text-slate-800 font-bold">
+                <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
+                <span>Rp 55.000 (Naik)</span>
               </div>
             </div>
           </div>
           <p className="text-[10px] text-slate-400 italic">
-            *Otomatis mengenali angka & teks (cth: &quot;3hr&quot;, &quot;30 Hari&quot;)
+            *Otomatis mengenali kata &quot;Perdana&quot; atau &quot;SP&quot; pada nama paket / kolom Excel
           </p>
         </div>
       )}

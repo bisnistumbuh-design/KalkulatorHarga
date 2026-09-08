@@ -46,15 +46,44 @@ export function formatRupiah(amount: number): string {
 }
 
 /**
- * Aturan Penambahan Keuntungan (Margin) (FR-03)
- * - Masa Aktif <= 3 Hari: Margin = Rp 2.000
- * - Masa Aktif 4 s.d. 14 Hari: Margin = Rp 2.500
- * - Masa Aktif > 14 Hari / Lainnya: Margin = Rp 3.000
+ * Deteksi apakah suatu produk adalah Penjualan Perdana
+ * Mendeteksi flag eksplisit atau kata kunci dalam nama produk (perdana, kartu perdana, sp)
  */
-export function calculateMargin(activeDays: number): {
+export function isPerdanaProduct(name: any, explicitFlag?: boolean | string): boolean {
+  if (explicitFlag !== undefined && explicitFlag !== null) {
+    if (typeof explicitFlag === 'boolean') return explicitFlag;
+    const s = String(explicitFlag).toLowerCase().trim();
+    if (s === 'true' || s === '1' || s === 'ya' || s === 'yes' || s === 'perdana') return true;
+    if (s === 'false' || s === '0' || s === 'tidak' || s === 'no' || s === 'paket') return false;
+  }
+  if (!name) return false;
+  const lower = String(name).toLowerCase();
+  return (
+    lower.includes('perdana') ||
+    /\bsp\b/i.test(lower) ||
+    lower.includes('starter pack') ||
+    lower.includes('kartu perdana')
+  );
+}
+
+/**
+ * Aturan Penambahan Keuntungan (Margin) (FR-03 & Fitur Penjualan Perdana)
+ * - Penjualan Perdana: Margin = Rp 5.000 (dari harga modal)
+ * - Paket Data Biasa:
+ *   - Masa Aktif <= 3 Hari: Margin = Rp 2.000
+ *   - Masa Aktif 4 s.d. 14 Hari: Margin = Rp 2.500
+ *   - Masa Aktif > 14 Hari / Lainnya: Margin = Rp 3.000
+ */
+export function calculateMargin(
+  activeDays: number,
+  isPerdana: boolean = false
+): {
   margin: number;
-  tier: 'tier1' | 'tier2' | 'tier3';
+  tier: 'tier1' | 'tier2' | 'tier3' | 'perdana';
 } {
+  if (isPerdana) {
+    return { margin: 5000, tier: 'perdana' };
+  }
   if (activeDays <= 3) {
     return { margin: 2000, tier: 'tier1' };
   } else if (activeDays >= 4 && activeDays <= 14) {
@@ -102,18 +131,20 @@ export function calculateCustomRounding(totalBeforeRounding: number): {
 }
 
 /**
- * Menghitung satu paket data secara menyeluruh
+ * Menghitung satu paket data atau kartu perdana secara menyeluruh
  */
 export function calculateSinglePackage(
   id: string,
   rawName: any,
   rawActiveDays: any,
-  rawCost: any
+  rawCost: any,
+  rawIsPerdana?: boolean | string
 ): CalculatedPackage {
   const name = String(rawName || 'Paket Data Tanpa Nama').trim();
+  const isPerdana = isPerdanaProduct(name, rawIsPerdana);
   const activeDays = extractActiveDays(rawActiveDays);
   const costPrice = parseCostPrice(rawCost);
-  const { margin, tier } = calculateMargin(activeDays);
+  const { margin, tier } = calculateMargin(activeDays, isPerdana);
   const totalBeforeRounding = costPrice + margin;
   const rounding = calculateCustomRounding(totalBeforeRounding);
   const actualProfit = rounding.sellingPrice - costPrice;
@@ -137,23 +168,24 @@ export function calculateSinglePackage(
     actualProfit,
     actualProfitFormatted: formatRupiah(actualProfit),
     tier,
+    isPerdana,
   };
 }
 
 /**
- * Data Sampel Riil Paket Data Indonesia untuk Pengujian Cepat
+ * Data Sampel Riil Paket Data & Kartu Perdana Indonesia untuk Pengujian Cepat
  */
 export const SAMPLE_PACKAGES_RAW = [
-  { name: 'Telkomsel InternetMAX 10GB', active: '3 hari', cost: 18500 },
-  { name: 'Telkomsel Flash Regular 3GB', active: '3hr', cost: 12200 },
-  { name: 'Indosat Freedom Harian 7GB', active: '7 Hari', cost: 23800 },
-  { name: 'XL Xtra Combo Flex M 12GB', active: '7hr', cost: 31200 },
-  { name: 'Axis Bronet 5GB 24 Jam', active: '14 Hari', cost: 28800 },
-  { name: 'Smartfren Kuota Nonstop 18GB', active: '14 hari', cost: 44600 },
-  { name: 'Tri AlwaysOn AON 6GB', active: '30 Hari', cost: 38600 },
-  { name: 'Telkomsel OMG! Nonton 25GB', active: '30 hari', cost: 74200 },
-  { name: 'XL Xtra Combo VIP Plus 35GB', active: '30hr', cost: 89300 },
-  { name: 'Indosat Freedom Internet 50GB', active: '30 Hari', cost: 110400 },
-  { name: 'By.U Kuota Yang Bikin Kaget 10GB', active: '1 Hari', cost: 9300 },
-  { name: 'Tri Happy Jumbo 100GB', active: '30 Hari', cost: 135800 },
+  { name: 'Perdana Telkomsel Kuota 14GB Segel', active: '30 hari', cost: 35000, isPerdana: true },
+  { name: 'Perdana Indosat Freedom 20GB', active: '30 Hari', cost: 42000, isPerdana: true },
+  { name: 'Telkomsel InternetMAX 10GB', active: '3 hari', cost: 18500, isPerdana: false },
+  { name: 'Telkomsel Flash Regular 3GB', active: '3hr', cost: 12200, isPerdana: false },
+  { name: 'Indosat Freedom Harian 7GB', active: '7 Hari', cost: 23800, isPerdana: false },
+  { name: 'Perdana Smartfren Kuota 15GB', active: '14 hari', cost: 27500, isPerdana: true },
+  { name: 'XL Xtra Combo Flex M 12GB', active: '7hr', cost: 31200, isPerdana: false },
+  { name: 'Axis Bronet 5GB 24 Jam', active: '14 Hari', cost: 28800, isPerdana: false },
+  { name: 'Smartfren Kuota Nonstop 18GB', active: '14 hari', cost: 44600, isPerdana: false },
+  { name: 'Tri AlwaysOn AON 6GB', active: '30 Hari', cost: 38600, isPerdana: false },
+  { name: 'Telkomsel OMG! Nonton 25GB', active: '30 hari', cost: 74200, isPerdana: false },
+  { name: 'By.U Kuota Yang Bikin Kaget 10GB', active: '1 Hari', cost: 9300, isPerdana: false },
 ];
