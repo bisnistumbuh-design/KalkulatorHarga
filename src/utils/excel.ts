@@ -117,12 +117,19 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
 /**
  * Ekspor data hasil kalkulasi ke format Excel (.xlsx)
  */
-export function exportToExcel(packages: CalculatedPackage[], filename = 'Daftar_Harga_Jual_Paket_Data.xlsx'): void {
+export function exportToExcel(packages: CalculatedPackage[], filename = 'Daftar_Harga_Jual_Produk.xlsx'): void {
   const exportData = packages.map((pkg, idx) => ({
     'No': idx + 1,
-    'Nama Paket': pkg.name,
-    'Jenis Produk': pkg.isPerdana ? 'Kartu Perdana' : 'Paket Data',
-    'Masa Aktif': pkg.activeDaysFormatted,
+    'Nama Produk / Paket': pkg.name,
+    'Jenis / Kategori':
+      pkg.category === 'microsd'
+        ? `MicroSD ${pkg.storageCapacity || ''} (Penyimpanan)`
+        : pkg.category === 'powerbank'
+        ? 'Powerbank (Aksesoris)'
+        : pkg.category === 'perdana'
+        ? 'Kartu Perdana'
+        : 'Paket Data',
+    'Masa Aktif / Kapasitas': pkg.activeDaysFormatted,
     'Harga Modal (Rp)': pkg.costPrice,
     'Margin Keuntungan (Rp)': pkg.margin,
     'Modal + Untung (Rp)': pkg.totalBeforeRounding,
@@ -137,9 +144,9 @@ export function exportToExcel(packages: CalculatedPackage[], filename = 'Daftar_
   // Atur lebar kolom agar rapi
   worksheet['!cols'] = [
     { wch: 6 },  // No
-    { wch: 35 }, // Nama Paket
-    { wch: 16 }, // Jenis Produk
-    { wch: 14 }, // Masa Aktif
+    { wch: 38 }, // Nama Produk
+    { wch: 26 }, // Jenis / Kategori
+    { wch: 18 }, // Masa Aktif / Kapasitas
     { wch: 18 }, // Harga Modal
     { wch: 22 }, // Margin Keuntungan
     { wch: 20 }, // Modal + Untung
@@ -159,26 +166,32 @@ export function exportToExcel(packages: CalculatedPackage[], filename = 'Daftar_
  */
 export function downloadTemplateExcel(): void {
   const templateData = [
-    ['Nama Paket', 'Masa Aktif', 'Harga Modal', 'Jenis (Opsional)'],
+    ['Nama Produk', 'Masa Aktif / Kapasitas', 'Harga Modal', 'Jenis / Kategori (Opsional)'],
+    ['MicroSD Sandisk Ultra 4GB Class 10', '4GB', 28200, 'MicroSD'],
+    ['MicroSD V-Gen Turbo 8GB', '8GB', 33400, 'MicroSD'],
+    ['MicroSD Sandisk Ultra 16GB 80MB/s', '16GB', 41200, 'MicroSD'],
+    ['MicroSD Kingston Canvas 32GB', '32GB', 48600, 'MicroSD'],
+    ['MicroSD Sandisk Ultra 64GB 100MB/s', '64GB', 67300, 'MicroSD'],
+    ['MicroSD Samsung Evo Plus 128GB', '128GB', 124800, 'MicroSD'],
+    ['Powerbank Robot RT180 10000mAh', 'Aksesoris', 84200, 'Powerbank'],
+    ['Powerbank Vivan VPB-W10 10000mAh', 'Aksesoris', 138500, 'Powerbank'],
     ['Perdana Telkomsel Kuota 14GB Segel', '30 hari', 35000, 'Perdana'],
     ['Perdana Indosat Freedom 20GB', '30hr', 42000, 'Perdana'],
     ['Telkomsel InternetMAX 10GB', '3 hari', 18500, 'Paket Data'],
     ['Indosat Freedom Harian 7GB', '7hr', 23800, 'Paket Data'],
     ['XL Xtra Combo Flex M 12GB', '14 Hari', 31200, 'Paket Data'],
     ['Tri AlwaysOn AON 6GB', '30 hari', 38600, 'Paket Data'],
-    ['Smartfren Kuota Nonstop 18GB', '30', 44600, 'Paket Data'],
-    ['By.U 10GB 1 Hari', '1hr', 9300, 'Paket Data'],
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(templateData);
   worksheet['!cols'] = [
-    { wch: 35 }, // Kolom A: Nama Paket
-    { wch: 16 }, // Kolom B: Masa Aktif
+    { wch: 38 }, // Kolom A: Nama Produk
+    { wch: 22 }, // Kolom B: Masa Aktif / Kapasitas
     { wch: 16 }, // Kolom C: Harga Modal
-    { wch: 18 }, // Kolom D: Jenis (Opsional)
+    { wch: 26 }, // Kolom D: Jenis / Kategori (Opsional)
   ];
 
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Daftar Paket');
-  XLSX.writeFile(workbook, 'Template_Modal_Paket_Data.xlsx');
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Daftar Produk');
+  XLSX.writeFile(workbook, 'Template_Modal_Produk_Konter.xlsx');
 }

@@ -2,19 +2,36 @@ export interface RawPackageRow {
   rawName: any;
   rawActiveDays: any;
   rawCostPrice: any;
+  rawCategory?: any;
   rawIsPerdana?: any;
 }
 
-export type ProductType = 'paket' | 'perdana';
+export type ProductCategory = 'paket' | 'perdana' | 'microsd' | 'powerbank';
+
+export type MicroSdCapacity = '4gb' | '8gb' | '16gb' | '32gb' | '64gb' | '128gb' | 'other';
+
+export type ProductTier =
+  | 'tier1' // Paket Data <= 3hr (+2rb)
+  | 'tier2' // Paket Data 4-14hr (+2.5rb)
+  | 'tier3' // Paket Data > 14hr (+3rb)
+  | 'perdana' // Perdana (+5rb)
+  | 'microsd_4gb' // MicroSD 4GB (+10rb)
+  | 'microsd_8gb' // MicroSD 8GB (+12rb)
+  | 'microsd_16_32gb' // MicroSD 16GB, 32GB (+15rb)
+  | 'microsd_64_128gb' // MicroSD 64GB, 128GB (+18rb)
+  | 'powerbank'; // Powerbank (+15rb)
 
 export interface CalculatedPackage {
   id: string;
   name: string;
+  category: ProductCategory;
+  categoryLabel: string;
+  storageCapacity?: string; // "4GB", "8GB", "16GB", "32GB", "64GB", "128GB"
   activeDays: number;
-  activeDaysFormatted: string; // "X hr"
+  activeDaysFormatted: string; // "X hr" or "-" for hardware
   costPrice: number; // Harga Modal
   costPriceFormatted: string; // "Rp XX.XXX"
-  margin: number; // Rp 2.000 / 2.500 / 3.000 / 5.000 (Perdana)
+  margin: number; // Margin Keuntungan
   marginFormatted: string;
   totalBeforeRounding: number; // Modal + Untung
   totalBeforeRoundingFormatted: string; // "Rp XX.XXX"
@@ -25,8 +42,18 @@ export interface CalculatedPackage {
   roundingDiff: number; // sellingPrice - totalBeforeRounding
   actualProfit: number; // sellingPrice - costPrice
   actualProfitFormatted: string;
-  tier: 'tier1' | 'tier2' | 'tier3' | 'perdana'; // <=3hr, 4-14hr, >14hr, atau perdana (+5rb)
-  isPerdana: boolean; // Penjualan Perdana flag (margin Rp 5.000)
+  tier: ProductTier;
+  isPerdana: boolean; // Backward-compatibility flag
 }
 
-export type ActiveFilterTier = 'all' | 'tier1' | 'tier2' | 'tier3' | 'perdana';
+export type ActiveFilterTier =
+  | 'all'
+  | 'paket'
+  | 'tier1'
+  | 'tier2'
+  | 'tier3'
+  | 'perdana'
+  | 'penyimpanan'
+  | 'microsd'
+  | 'powerbank';
+

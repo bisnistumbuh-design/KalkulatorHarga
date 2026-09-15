@@ -1,4 +1,4 @@
-import { CalculatedPackage } from '../types';
+import { CalculatedPackage, ProductCategory, ProductTier, MicroSdCapacity } from '../types';
 
 /**
  * Ekstraksi angka masa aktif dari format teks fleksibel (FR-02)
@@ -67,8 +67,136 @@ export function isPerdanaProduct(name: any, explicitFlag?: boolean | string): bo
 }
 
 /**
- * Aturan Penambahan Keuntungan (Margin) (FR-03 & Fitur Penjualan Perdana)
- * - Penjualan Perdana: Margin = Rp 5.000 (dari harga modal)
+ * Ekstraksi kapasitas memori MicroSD dari teks nama (misal: "4GB", "32 GB")
+ */
+export function extractMicroSdCapacity(name: any, explicitCapacity?: string): string | undefined {
+  if (explicitCapacity && explicitCapacity.trim()) {
+    const cleaned = explicitCapacity.trim().toUpperCase();
+    if (cleaned.includes('4GB') || cleaned === '4') return '4GB';
+    if (cleaned.includes('8GB') || cleaned === '8') return '8GB';
+    if (cleaned.includes('16GB') || cleaned === '16') return '16GB';
+    if (cleaned.includes('32GB') || cleaned === '32') return '32GB';
+    if (cleaned.includes('64GB') || cleaned === '64') return '64GB';
+    if (cleaned.includes('128GB') || cleaned === '128') return '128GB';
+    return cleaned;
+  }
+  if (!name) return undefined;
+  const str = String(name);
+  if (/\b4\s*gb\b/i.test(str)) return '4GB';
+  if (/\b8\s*gb\b/i.test(str)) return '8GB';
+  if (/\b16\s*gb\b/i.test(str)) return '16GB';
+  if (/\b32\s*gb\b/i.test(str)) return '32GB';
+  if (/\b64\s*gb\b/i.test(str)) return '64GB';
+  if (/\b128\s*gb\b/i.test(str)) return '128GB';
+  if (/\b256\s*gb\b/i.test(str)) return '256GB';
+  if (/\b512\s*gb\b/i.test(str)) return '512GB';
+  return undefined;
+}
+
+/**
+ * Mendeteksi kategori produk secara akurat
+ */
+export function detectProductCategory(
+  name: any,
+  explicitCategory?: any,
+  isPerdanaFlag?: boolean | string
+): {
+  category: ProductCategory;
+  categoryLabel: string;
+  storageCapacity?: string;
+} {
+  const nameStr = String(name || '');
+  const lower = nameStr.toLowerCase();
+
+  // 1. Periksa kategori eksplisit jika ada
+  if (explicitCategory) {
+    const exp = String(explicitCategory).toLowerCase().trim();
+    if (exp === 'microsd' || exp.includes('microsd') || exp.includes('micro sd') || exp.includes('penyimpanan') || exp.includes('memory') || exp.includes('memori')) {
+      const cap = extractMicroSdCapacity(nameStr);
+      return {
+        category: 'microsd',
+        categoryLabel: cap ? `MicroSD ${cap}` : 'MicroSD (Penyimpanan)',
+        storageCapacity: cap,
+      };
+    }
+    if (exp === 'powerbank' || exp.includes('powerbank') || exp.includes('power bank') || exp === 'pb') {
+      return {
+        category: 'powerbank',
+        categoryLabel: 'Powerbank',
+      };
+    }
+    if (exp === 'perdana' || exp.includes('perdana')) {
+      return {
+        category: 'perdana',
+        categoryLabel: 'Kartu Perdana',
+      };
+    }
+    if (exp === 'paket' || exp.includes('paket') || exp.includes('data')) {
+      return {
+        category: 'paket',
+        categoryLabel: 'Paket Data',
+      };
+    }
+  }
+
+  // 2. Periksa flag isPerdana
+  if (isPerdanaProduct(nameStr, isPerdanaFlag)) {
+    return {
+      category: 'perdana',
+      categoryLabel: 'Kartu Perdana',
+    };
+  }
+
+  // 3. Deteksi otomatis dari nama produk
+  // Cek MicroSD
+  if (
+    lower.includes('microsd') ||
+    lower.includes('micro sd') ||
+    lower.includes('micro-sd') ||
+    lower.includes('sd card') ||
+    lower.includes('memory card') ||
+    lower.includes('memori card') ||
+    lower.includes('kartu memori') ||
+    lower.includes('tf card')
+  ) {
+    const cap = extractMicroSdCapacity(nameStr);
+    return {
+      category: 'microsd',
+      categoryLabel: cap ? `MicroSD ${cap}` : 'MicroSD (Penyimpanan)',
+      storageCapacity: cap,
+    };
+  }
+
+  // Cek Powerbank
+  if (
+    lower.includes('powerbank') ||
+    lower.includes('power bank') ||
+    /\bpower\s*bank\b/i.test(lower) ||
+    /\bpb\b/i.test(lower)
+  ) {
+    return {
+      category: 'powerbank',
+      categoryLabel: 'Powerbank',
+    };
+  }
+
+  // Default: Paket Data
+  return {
+    category: 'paket',
+    categoryLabel: 'Paket Data',
+  };
+}
+
+/**
+ * Aturan Penambahan Keuntungan (Margin) Lengkap:
+ * - Kategori Penyimpanan (MicroSD):
+ *   - 4GB: Modal + Rp 10.000
+ *   - 8GB: Modal + Rp 12.000
+ *   - 16GB, 32GB: Modal + Rp 15.000
+ *   - 64GB, 128GB (dan ke atas): Modal + Rp 18.000
+ *   - Kapasitas umum/lainnya: Modal + Rp 15.000
+ * - Powerbank: Modal + Rp 15.000 (15rb)
+ * - Penjualan Perdana: Modal + Rp 5.000
  * - Paket Data Biasa:
  *   - Masa Aktif <= 3 Hari: Margin = Rp 2.000
  *   - Masa Aktif 4 s.d. 14 Hari: Margin = Rp 2.500
@@ -76,14 +204,39 @@ export function isPerdanaProduct(name: any, explicitFlag?: boolean | string): bo
  */
 export function calculateMargin(
   activeDays: number,
-  isPerdana: boolean = false
+  category: ProductCategory = 'paket',
+  storageCapacity?: string
 ): {
   margin: number;
-  tier: 'tier1' | 'tier2' | 'tier3' | 'perdana';
+  tier: ProductTier;
 } {
-  if (isPerdana) {
+  if (category === 'microsd') {
+    const cap = (storageCapacity || '').toUpperCase().trim();
+    if (cap === '4GB') {
+      return { margin: 10000, tier: 'microsd_4gb' };
+    }
+    if (cap === '8GB') {
+      return { margin: 12000, tier: 'microsd_8gb' };
+    }
+    if (cap === '16GB' || cap === '32GB') {
+      return { margin: 15000, tier: 'microsd_16_32gb' };
+    }
+    if (cap === '64GB' || cap === '128GB' || cap === '256GB' || cap === '512GB') {
+      return { margin: 18000, tier: 'microsd_64_128gb' };
+    }
+    // Default jika kapasitas MicroSD tidak terdeteksi
+    return { margin: 15000, tier: 'microsd_16_32gb' };
+  }
+
+  if (category === 'powerbank') {
+    return { margin: 15000, tier: 'powerbank' };
+  }
+
+  if (category === 'perdana') {
     return { margin: 5000, tier: 'perdana' };
   }
+
+  // Kategori Paket Data
   if (activeDays <= 3) {
     return { margin: 2000, tier: 'tier1' };
   } else if (activeDays >= 4 && activeDays <= 14) {
@@ -131,29 +284,51 @@ export function calculateCustomRounding(totalBeforeRounding: number): {
 }
 
 /**
- * Menghitung satu paket data atau kartu perdana secara menyeluruh
+ * Menghitung satu produk (paket data, kartu perdana, MicroSD, atau Powerbank) secara menyeluruh
  */
 export function calculateSinglePackage(
   id: string,
   rawName: any,
   rawActiveDays: any,
   rawCost: any,
-  rawIsPerdana?: boolean | string
+  rawCategoryOrIsPerdana?: boolean | string | ProductCategory,
+  rawCapacity?: string
 ): CalculatedPackage {
-  const name = String(rawName || 'Paket Data Tanpa Nama').trim();
-  const isPerdana = isPerdanaProduct(name, rawIsPerdana);
+  const name = String(rawName || 'Produk Tanpa Nama').trim();
+  const explicitCategory =
+    typeof rawCategoryOrIsPerdana === 'string' ? rawCategoryOrIsPerdana : undefined;
+  const isPerdanaFlag =
+    typeof rawCategoryOrIsPerdana === 'boolean' ? rawCategoryOrIsPerdana : undefined;
+
+  const { category, categoryLabel, storageCapacity: detectedCapacity } = detectProductCategory(
+    name,
+    explicitCategory,
+    isPerdanaFlag
+  );
+
+  const finalCapacity = rawCapacity || detectedCapacity;
   const activeDays = extractActiveDays(rawActiveDays);
   const costPrice = parseCostPrice(rawCost);
-  const { margin, tier } = calculateMargin(activeDays, isPerdana);
+  const { margin, tier } = calculateMargin(activeDays, category, finalCapacity);
   const totalBeforeRounding = costPrice + margin;
   const rounding = calculateCustomRounding(totalBeforeRounding);
   const actualProfit = rounding.sellingPrice - costPrice;
 
+  let activeDaysFormatted = `${activeDays} hr`;
+  if (category === 'microsd') {
+    activeDaysFormatted = finalCapacity || 'Penyimpanan';
+  } else if (category === 'powerbank') {
+    activeDaysFormatted = 'Aksesoris';
+  }
+
   return {
     id,
     name,
+    category,
+    categoryLabel,
+    storageCapacity: finalCapacity,
     activeDays,
-    activeDaysFormatted: `${activeDays} hr`,
+    activeDaysFormatted,
     costPrice,
     costPriceFormatted: formatRupiah(costPrice),
     margin,
@@ -168,24 +343,38 @@ export function calculateSinglePackage(
     actualProfit,
     actualProfitFormatted: formatRupiah(actualProfit),
     tier,
-    isPerdana,
+    isPerdana: category === 'perdana',
   };
 }
 
 /**
- * Data Sampel Riil Paket Data & Kartu Perdana Indonesia untuk Pengujian Cepat
+ * Data Sampel Riil Paket Data, Kartu Perdana, MicroSD & Powerbank untuk Pengujian Cepat
  */
 export const SAMPLE_PACKAGES_RAW = [
-  { name: 'Perdana Telkomsel Kuota 14GB Segel', active: '30 hari', cost: 35000, isPerdana: true },
-  { name: 'Perdana Indosat Freedom 20GB', active: '30 Hari', cost: 42000, isPerdana: true },
-  { name: 'Telkomsel InternetMAX 10GB', active: '3 hari', cost: 18500, isPerdana: false },
-  { name: 'Telkomsel Flash Regular 3GB', active: '3hr', cost: 12200, isPerdana: false },
-  { name: 'Indosat Freedom Harian 7GB', active: '7 Hari', cost: 23800, isPerdana: false },
-  { name: 'Perdana Smartfren Kuota 15GB', active: '14 hari', cost: 27500, isPerdana: true },
-  { name: 'XL Xtra Combo Flex M 12GB', active: '7hr', cost: 31200, isPerdana: false },
-  { name: 'Axis Bronet 5GB 24 Jam', active: '14 Hari', cost: 28800, isPerdana: false },
-  { name: 'Smartfren Kuota Nonstop 18GB', active: '14 hari', cost: 44600, isPerdana: false },
-  { name: 'Tri AlwaysOn AON 6GB', active: '30 Hari', cost: 38600, isPerdana: false },
-  { name: 'Telkomsel OMG! Nonton 25GB', active: '30 hari', cost: 74200, isPerdana: false },
-  { name: 'By.U Kuota Yang Bikin Kaget 10GB', active: '1 Hari', cost: 9300, isPerdana: false },
+  // Kategori Penyimpanan: MicroSD (4GB, 8GB, 16GB, 32GB, 64GB, 128GB)
+  { name: 'MicroSD Sandisk Ultra 4GB Class 10', active: '4GB', cost: 28200, category: 'microsd', capacity: '4GB' },
+  { name: 'MicroSD V-Gen Turbo 8GB Original', active: '8GB', cost: 33400, category: 'microsd', capacity: '8GB' },
+  { name: 'MicroSD Sandisk Ultra 16GB 80MB/s', active: '16GB', cost: 41200, category: 'microsd', capacity: '16GB' },
+  { name: 'MicroSD Kingston Canvas 32GB Class 10', active: '32GB', cost: 48600, category: 'microsd', capacity: '32GB' },
+  { name: 'MicroSD Sandisk Ultra 64GB 100MB/s', active: '64GB', cost: 67300, category: 'microsd', capacity: '64GB' },
+  { name: 'MicroSD Samsung Evo Plus 128GB 130MB/s', active: '128GB', cost: 124800, category: 'microsd', capacity: '128GB' },
+
+  // Kategori Aksesoris: Powerbank (+15rb)
+  { name: 'Powerbank Robot RT180 10000mAh Dual Input', active: 'Aksesoris', cost: 84200, category: 'powerbank' },
+  { name: 'Powerbank Vivan VPB-W10 10000mAh Fast Charge', active: 'Aksesoris', cost: 138500, category: 'powerbank' },
+
+  // Kategori Kartu Perdana (+5rb)
+  { name: 'Perdana Telkomsel Kuota 14GB Segel', active: '30 hari', cost: 35000, category: 'perdana' },
+  { name: 'Perdana Indosat Freedom 20GB', active: '30 Hari', cost: 42000, category: 'perdana' },
+  { name: 'Perdana Smartfren Kuota 15GB', active: '14 hari', cost: 27500, category: 'perdana' },
+
+  // Kategori Paket Data (≤3hr, 4-14hr, >14hr)
+  { name: 'Telkomsel InternetMAX 10GB', active: '3 hari', cost: 18500, category: 'paket' },
+  { name: 'Telkomsel Flash Regular 3GB', active: '3hr', cost: 12200, category: 'paket' },
+  { name: 'Indosat Freedom Harian 7GB', active: '7 Hari', cost: 23800, category: 'paket' },
+  { name: 'XL Xtra Combo Flex M 12GB', active: '7hr', cost: 31200, category: 'paket' },
+  { name: 'Axis Bronet 5GB 24 Jam', active: '14 Hari', cost: 28800, category: 'paket' },
+  { name: 'Tri AlwaysOn AON 6GB', active: '30 Hari', cost: 38600, category: 'paket' },
+  { name: 'Telkomsel OMG! Nonton 25GB', active: '30 hari', cost: 74200, category: 'paket' },
 ];
+

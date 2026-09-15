@@ -34,7 +34,14 @@ export default function App() {
     const startTime = performance.now();
 
     const sampleCalculated = SAMPLE_PACKAGES_RAW.map((pkg, idx) =>
-      calculateSinglePackage(`sample-${idx + 1}`, pkg.name, pkg.active, pkg.cost, pkg.isPerdana)
+      calculateSinglePackage(
+        `sample-${idx + 1}`,
+        pkg.name,
+        pkg.active,
+        pkg.cost,
+        pkg.category,
+        pkg.capacity
+      )
     );
 
     const time = Math.round(performance.now() - startTime);
@@ -44,7 +51,7 @@ export default function App() {
     setIsLoading(false);
 
     if (showToast) {
-      showNotification('12 paket & kartu perdana sampel berhasil dimuat!');
+      showNotification('16 produk sampel (MicroSD, Powerbank, Perdana & Paket) berhasil dimuat!');
     }
   };
 
@@ -69,12 +76,20 @@ export default function App() {
     name: string,
     activeDays: string | number,
     costPrice: string | number,
-    isPerdana?: boolean
+    categoryOrIsPerdana?: boolean | string,
+    storageCapacity?: string
   ) => {
     setPackages((prev) =>
       prev.map((pkg) => {
         if (pkg.id === id) {
-          return calculateSinglePackage(id, name, activeDays, costPrice, isPerdana);
+          return calculateSinglePackage(
+            id,
+            name,
+            activeDays,
+            costPrice,
+            categoryOrIsPerdana,
+            storageCapacity
+          );
         }
         return pkg;
       })

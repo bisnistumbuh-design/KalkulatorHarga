@@ -16,7 +16,7 @@ import {
   Square,
   AlertTriangle,
 } from 'lucide-react';
-import { CalculatedPackage, ActiveFilterTier } from '../types';
+import { CalculatedPackage, ActiveFilterTier, ProductCategory } from '../types';
 import { exportToExcel } from '../utils/excel';
 import { calculateSinglePackage } from '../utils/calculator';
 import { exportToPdf, printTableToPrinter, PrintMode } from '../utils/pdf';
@@ -30,7 +30,8 @@ interface ResultsTableProps {
     name: string,
     activeDays: string | number,
     costPrice: string | number,
-    isPerdana?: boolean
+    categoryOrIsPerdana?: boolean | string,
+    storageCapacity?: string
   ) => void;
   onDeleteMultiple?: (ids: string[]) => void;
 }
@@ -68,24 +69,36 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   // Edit Modal state
   const [editingPackage, setEditingPackage] = useState<CalculatedPackage | null>(null);
   const [editName, setEditName] = useState('');
-  const [editActiveDays, setEditActiveDays] = useState('');
+  const [editCategory, setEditCategory] = useState<ProductCategory>('paket');
+  const [editCapacity, setEditCapacity] = useState<string>('16GB');
+  const [editActiveDays, setEditActiveDays] = useState('30');
   const [editCost, setEditCost] = useState('');
-  const [editIsPerdana, setEditIsPerdana] = useState(false);
 
   // Filter & Search
   const filteredPackages = useMemo(() => {
     return packages.filter((pkg) => {
       // Search
-      const matchesSearch = pkg.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch =
+        pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pkg.categoryLabel.toLowerCase().includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
 
-      // Filter tier
-      if (filterTier === 'perdana') {
-        return pkg.isPerdana || pkg.tier === 'perdana';
+      // Filter category & tier
+      if (filterTier === 'microsd' || filterTier === 'penyimpanan') {
+        return pkg.category === 'microsd';
       }
-      if (filterTier === 'tier1' && (pkg.tier !== 'tier1' || pkg.isPerdana)) return false;
-      if (filterTier === 'tier2' && (pkg.tier !== 'tier2' || pkg.isPerdana)) return false;
-      if (filterTier === 'tier3' && (pkg.tier !== 'tier3' || pkg.isPerdana)) return false;
+      if (filterTier === 'powerbank') {
+        return pkg.category === 'powerbank';
+      }
+      if (filterTier === 'perdana') {
+        return pkg.category === 'perdana' || pkg.isPerdana;
+      }
+      if (filterTier === 'paket') {
+        return pkg.category === 'paket';
+      }
+      if (filterTier === 'tier1' && (pkg.tier !== 'tier1' || pkg.category !== 'paket')) return false;
+      if (filterTier === 'tier2' && (pkg.tier !== 'tier2' || pkg.category !== 'paket')) return false;
+      if (filterTier === 'tier3' && (pkg.tier !== 'tier3' || pkg.category !== 'paket')) return false;
 
       return true;
     });
@@ -167,30 +180,39 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const handleOpenEdit = (pkg: CalculatedPackage) => {
     setEditingPackage(pkg);
     setEditName(pkg.name);
-    setEditActiveDays(String(pkg.activeDays));
+    setEditCategory(pkg.category || (pkg.isPerdana ? 'perdana' : 'paket'));
+    setEditCapacity(pkg.storageCapacity || '16GB');
+    setEditActiveDays(String(pkg.activeDays || 30));
     setEditCost(String(pkg.costPrice));
-    setEditIsPerdana(pkg.isPerdana ?? false);
   };
 
   const previewEditedPackage = useMemo(() => {
-    if (!editingPackage || !editName.trim() || !editActiveDays || !editCost) {
+    if (!editingPackage || !editName.trim() || !editCost) {
       return null;
     }
     return calculateSinglePackage(
       editingPackage.id,
       editName.trim(),
-      editActiveDays,
+      editCategory === 'paket' ? editActiveDays : editCapacity,
       editCost,
-      editIsPerdana
+      editCategory,
+      editCategory === 'microsd' ? editCapacity : undefined
     );
-  }, [editingPackage, editName, editActiveDays, editCost, editIsPerdana]);
+  }, [editingPackage, editName, editCategory, editCapacity, editActiveDays, editCost]);
 
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPackage || !onEditItem) return;
-    if (!editName.trim() || !editActiveDays || !editCost) return;
+    if (!editName.trim() || !editCost) return;
 
-    onEditItem(editingPackage.id, editName.trim(), editActiveDays, editCost, editIsPerdana);
+    onEditItem(
+      editingPackage.id,
+      editName.trim(),
+      editCategory === 'paket' ? editActiveDays : editCapacity,
+      editCost,
+      editCategory,
+      editCategory === 'microsd' ? editCapacity : undefined
+    );
     setEditingPackage(null);
   };
 
@@ -282,7 +304,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
           </div>
 
           {/* Filter Tiers */}
-          <div className="flex items-center gap-0.5 bg-slate-200/70 p-0.5 rounded text-[11px]">
+          <div className="flex flex-wrap items-center gap-0.5 bg-slate-200/70 p-0.5 rounded text-[11px]">
             <button
               type="button"
               id="filter-all"
@@ -297,6 +319,32 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             </button>
             <button
               type="button"
+              id="filter-microsd"
+              onClick={() => setFilterTier('microsd')}
+              className={`px-1.5 py-0.5 rounded font-medium transition-all ${
+                filterTier === 'microsd'
+                  ? 'bg-teal-700 text-white shadow-2xs font-bold'
+                  : 'text-teal-800 hover:text-teal-900 bg-teal-50 hover:bg-teal-100'
+              }`}
+              title="Kategori Penyimpanan MicroSD (Margin +10rb ~ +18rb)"
+            >
+              MicroSD ({packages.filter((p) => p.category === 'microsd').length})
+            </button>
+            <button
+              type="button"
+              id="filter-powerbank"
+              onClick={() => setFilterTier('powerbank')}
+              className={`px-1.5 py-0.5 rounded font-medium transition-all ${
+                filterTier === 'powerbank'
+                  ? 'bg-amber-600 text-white shadow-2xs font-bold'
+                  : 'text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100'
+              }`}
+              title="Kategori Aksesoris Powerbank (Margin +Rp 15.000)"
+            >
+              Powerbank ({packages.filter((p) => p.category === 'powerbank').length})
+            </button>
+            <button
+              type="button"
               id="filter-perdana"
               onClick={() => setFilterTier('perdana')}
               className={`px-1.5 py-0.5 rounded font-medium transition-all ${
@@ -306,7 +354,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               }`}
               title="Penjualan Perdana (Margin Rp 5.000 dari modal)"
             >
-              Perdana ({packages.filter((p) => p.isPerdana || p.tier === 'perdana').length})
+              Perdana ({packages.filter((p) => p.isPerdana || p.category === 'perdana').length})
             </button>
             <button
               type="button"
@@ -523,13 +571,18 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             ) : (
               sortedPackages.map((pkg, idx) => {
                 const isSelected = selectedIds.has(pkg.id);
-                const tierColor = pkg.isPerdana
-                  ? 'bg-purple-50 text-purple-700 border-purple-200'
-                  : pkg.tier === 'tier1'
-                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                  : pkg.tier === 'tier2'
-                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                  : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                const tierColor =
+                  pkg.category === 'microsd'
+                    ? 'bg-teal-50 text-teal-800 border-teal-200'
+                    : pkg.category === 'powerbank'
+                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                    : pkg.category === 'perdana' || pkg.isPerdana
+                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                    : pkg.tier === 'tier1'
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    : pkg.tier === 'tier2'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200';
 
                 return (
                   <tr
@@ -562,14 +615,30 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                     <td className="py-1.5 px-3 text-xs text-slate-800">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-medium text-slate-900">{pkg.name}</span>
-                        {pkg.isPerdana && (
+                        {pkg.category === 'microsd' && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-teal-100 text-teal-800 border border-teal-200">
+                            MicroSD {pkg.storageCapacity || ''}
+                          </span>
+                        )}
+                        {pkg.category === 'powerbank' && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            Powerbank (+15rb)
+                          </span>
+                        )}
+                        {(pkg.category === 'perdana' || pkg.isPerdana) && (
                           <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
                             Perdana (+5rb)
                           </span>
                         )}
                         <span
                           className={`text-[10px] font-mono ${
-                            pkg.isPerdana ? 'text-purple-700 font-semibold' : 'text-slate-400'
+                            pkg.category === 'microsd'
+                              ? 'text-teal-700 font-semibold'
+                              : pkg.category === 'powerbank'
+                              ? 'text-amber-700 font-semibold'
+                              : pkg.category === 'perdana' || pkg.isPerdana
+                              ? 'text-purple-700 font-semibold'
+                              : 'text-slate-400'
                           }`}
                         >
                           (+{pkg.marginFormatted})
@@ -577,7 +646,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                       </div>
                     </td>
 
-                    {/* Masa Aktif */}
+                    {/* Masa Aktif / Kapasitas */}
                     <td className="py-1.5 px-2.5 text-center">
                       <span
                         className={`inline-block px-1.5 py-0.2 rounded font-mono text-[10px] font-semibold border ${tierColor}`}
@@ -711,55 +780,146 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
 
             {/* Modal Body */}
             <form onSubmit={handleSaveEdit} className="p-4 space-y-3">
-              {/* Nama Paket */}
+              {/* Kategori Produk */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                  Nama Paket (Kolom A)
+                  Kategori Produk
+                </label>
+                <div className="grid grid-cols-4 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditCategory('paket')}
+                    className={`text-[10px] font-semibold py-1.5 px-1 rounded border transition-colors ${
+                      editCategory === 'paket'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    Paket Data
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditCategory('perdana')}
+                    className={`text-[10px] font-semibold py-1.5 px-1 rounded border transition-colors ${
+                      editCategory === 'perdana'
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-2xs'
+                        : 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                    }`}
+                  >
+                    Perdana (+5rb)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditCategory('microsd')}
+                    className={`text-[10px] font-semibold py-1.5 px-1 rounded border transition-colors ${
+                      editCategory === 'microsd'
+                        ? 'bg-teal-700 text-white border-teal-700 shadow-2xs'
+                        : 'bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100'
+                    }`}
+                  >
+                    MicroSD
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditCategory('powerbank')}
+                    className={`text-[10px] font-semibold py-1.5 px-1 rounded border transition-colors ${
+                      editCategory === 'powerbank'
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                        : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                    }`}
+                  >
+                    Powerbank (+15rb)
+                  </button>
+                </div>
+              </div>
+
+              {/* Nama Produk / Paket */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Nama Produk / Paket (Kolom A)
                 </label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Contoh: XTRA COMBO VIP 10GB"
+                  placeholder="Contoh: MicroSD Sandisk 32GB atau Freedom Combo 10GB"
                   className="w-full text-xs px-3 py-1.5 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 font-medium"
                   required
                 />
               </div>
 
-              {/* Masa Aktif */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase">
-                    Masa Aktif (Hari - Kolom B)
-                  </label>
-                  <span className="text-[10px] text-slate-400">Pilihan cepat:</span>
+              {/* Pilihan Khusus MicroSD: Kapasitas Penyimpanan */}
+              {editCategory === 'microsd' && (
+                <div className="p-2.5 rounded-lg bg-teal-50 border border-teal-200">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[11px] font-bold text-teal-900 uppercase">
+                      Kapasitas MicroSD (Aturan Margin)
+                    </label>
+                    <span className="text-[10px] font-mono font-bold text-teal-700 bg-white px-2 py-0.5 rounded border border-teal-200">
+                      {editCapacity === '4GB'
+                        ? '+Rp 10.000'
+                        : editCapacity === '8GB'
+                        ? '+Rp 12.000'
+                        : editCapacity === '16GB' || editCapacity === '32GB'
+                        ? '+Rp 15.000'
+                        : '+Rp 18.000'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-6 gap-1">
+                    {['4GB', '8GB', '16GB', '32GB', '64GB', '128GB'].map((cap) => (
+                      <button
+                        key={cap}
+                        type="button"
+                        onClick={() => setEditCapacity(cap)}
+                        className={`text-[10px] font-mono font-semibold py-1 rounded border transition-colors ${
+                          editCapacity === cap
+                            ? 'bg-teal-700 text-white border-teal-700 shadow-2xs'
+                            : 'bg-white text-teal-800 border-teal-200 hover:bg-teal-100'
+                        }`}
+                      >
+                        {cap}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  {[1, 3, 7, 14, 30].map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => setEditActiveDays(String(d))}
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded border transition-colors ${
-                        String(editActiveDays) === String(d)
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {d} hr
-                    </button>
-                  ))}
+              )}
+
+              {/* Masa Aktif (Hanya jika Paket Data atau Perdana) */}
+              {editCategory === 'paket' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase">
+                      Masa Aktif (Hari - Kolom B)
+                    </label>
+                    <span className="text-[10px] text-slate-400">Pilihan cepat:</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    {[1, 3, 7, 14, 30].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setEditActiveDays(String(d))}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded border transition-colors ${
+                          String(editActiveDays) === String(d)
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {d} hr
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={editActiveDays}
+                    onChange={(e) => setEditActiveDays(e.target.value)}
+                    className="w-full text-xs px-3 py-1.5 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
+                    required
+                  />
                 </div>
-                <input
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={editActiveDays}
-                  onChange={(e) => setEditActiveDays(e.target.value)}
-                  className="w-full text-xs px-3 py-1.5 rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
-                  required
-                />
-              </div>
+              )}
 
               {/* Harga Modal */}
               <div>
@@ -782,30 +942,6 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                 </div>
               </div>
 
-              {/* Jenis Produk: Perdana Toggle */}
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-purple-50 border border-purple-200">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="edit-is-perdana"
-                    checked={editIsPerdana}
-                    onChange={(e) => setEditIsPerdana(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer"
-                  />
-                  <div>
-                    <label htmlFor="edit-is-perdana" className="text-xs font-bold text-purple-900 cursor-pointer block">
-                      Penjualan Perdana
-                    </label>
-                    <span className="text-[10px] text-purple-600">
-                      Terapkan keuntungan margin tetap Rp 5.000 dari modal
-                    </span>
-                  </div>
-                </div>
-                <span className="text-[10px] font-mono font-bold text-purple-700 bg-white px-2 py-0.5 rounded border border-purple-200 shadow-2xs shrink-0">
-                  +Rp 5.000
-                </span>
-              </div>
-
               {/* Live Calculation Preview */}
               {previewEditedPackage && (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs space-y-1.5 font-sans">
@@ -814,19 +950,17 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-slate-600 text-[11px]">
                     <span>
-                      Margin (
-                      {previewEditedPackage.isPerdana
-                        ? 'Kartu Perdana'
-                        : previewEditedPackage.tier === 'tier1'
-                        ? '≤3 hari'
-                        : previewEditedPackage.tier === 'tier2'
-                        ? '4-14 hari'
-                        : '>14 hari'}
-                      ):
+                      Margin ({previewEditedPackage.categoryLabel}):
                     </span>
                     <span
                       className={`font-mono font-semibold ${
-                        previewEditedPackage.isPerdana ? 'text-purple-700' : 'text-slate-800'
+                        previewEditedPackage.category === 'microsd'
+                          ? 'text-teal-700'
+                          : previewEditedPackage.category === 'powerbank'
+                          ? 'text-amber-700'
+                          : previewEditedPackage.category === 'perdana'
+                          ? 'text-purple-700'
+                          : 'text-indigo-700'
                       }`}
                     >
                       +{previewEditedPackage.marginFormatted}

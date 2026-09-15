@@ -35,23 +35,52 @@ export const RulesExplainer: React.FC = () => {
         {/* Rule 2: Penjualan Perdana */}
         <div className="border-l-2 border-purple-500 pl-2.5 py-0.5">
           <div className="font-semibold text-slate-800 text-[11px] flex items-center justify-between">
-            <span>2. Penjualan Perdana (Margin Khusus)</span>
+            <span>2. Penjualan Perdana</span>
             <span className="text-[9px] font-bold text-purple-700 bg-purple-50 px-1 rounded border border-purple-200">
-              Baru
+              +Rp 5.000
             </span>
           </div>
           <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-            Kartu Perdana: <span className="text-purple-700 font-bold">+Rp 5.000</span> dari harga modal (tetap berlaku pembulatan ribuan)
+            Kartu Perdana / SP: <span className="text-purple-700 font-bold">+Rp 5.000</span> dari modal
           </div>
         </div>
 
-        {/* Rule 3: Pembulatan */}
+        {/* Rule 3: Kategori Penyimpanan (MicroSD) */}
+        <div className="border-l-2 border-teal-500 pl-2.5 py-0.5">
+          <div className="font-semibold text-slate-800 text-[11px] flex items-center justify-between">
+            <span>3. Kategori Penyimpanan (MicroSD)</span>
+            <span className="text-[9px] font-bold text-teal-700 bg-teal-50 px-1 rounded border border-teal-200">
+              Penyimpanan
+            </span>
+          </div>
+          <div className="text-[10px] text-slate-600 font-mono mt-0.5 grid grid-cols-2 gap-x-2 gap-y-0.5">
+            <div>4GB: <span className="text-teal-700 font-bold">+Rp 10.000</span></div>
+            <div>8GB: <span className="text-teal-700 font-bold">+Rp 12.000</span></div>
+            <div>16GB, 32GB: <span className="text-teal-700 font-bold">+Rp 15.000</span></div>
+            <div>64GB, 128GB: <span className="text-teal-700 font-bold">+Rp 18.000</span></div>
+          </div>
+        </div>
+
+        {/* Rule 4: Aksesoris (Powerbank) */}
         <div className="border-l-2 border-amber-500 pl-2.5 py-0.5">
-          <div className="font-semibold text-slate-800 text-[11px]">
-            3. Pembulatan Kustom Ribuan (FR-04)
+          <div className="font-semibold text-slate-800 text-[11px] flex items-center justify-between">
+            <span>4. Aksesoris (Powerbank)</span>
+            <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1 rounded border border-amber-200">
+              +Rp 15.000
+            </span>
           </div>
           <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-            Sisa ratusan ≤ 300: <span className="text-amber-700 font-semibold">Bawah</span> | &gt; 300: <span className="text-emerald-700 font-semibold">Atas</span> (ke kelipatan 1.000)
+            Powerbank: <span className="text-amber-700 font-bold">+Rp 15.000</span> dari harga modal
+          </div>
+        </div>
+
+        {/* Rule 5: Pembulatan */}
+        <div className="border-l-2 border-slate-500 pl-2.5 py-0.5">
+          <div className="font-semibold text-slate-800 text-[11px]">
+            5. Pembulatan Kustom Ribuan (FR-04)
+          </div>
+          <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+            Sisa ratusan ≤ 300: <span className="text-slate-700 font-semibold">Bawah</span> | &gt; 300: <span className="text-emerald-700 font-semibold">Atas</span> (ke kelipatan 1.000)
           </div>
         </div>
       </div>
@@ -59,25 +88,39 @@ export const RulesExplainer: React.FC = () => {
       {isExpanded && (
         <div className="mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-600 space-y-2 bg-slate-50/70 p-2.5 rounded">
           <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-            Contoh Penerapan:
+            Contoh Penerapan Margin & Pembulatan:
           </div>
           <div className="space-y-1.5 font-mono text-[10px]">
+            <div className="flex items-center justify-between bg-white p-1.5 rounded border border-teal-200">
+              <span className="text-teal-900 font-medium">MicroSD 4GB: Modal 28.200 (+10rb = 38.200)</span>
+              <div className="flex items-center gap-1 text-teal-800 font-bold">
+                <ArrowRight className="w-2.5 h-2.5 text-teal-400" />
+                <span>Rp 38.000 (Turun)</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between bg-white p-1.5 rounded border border-teal-200">
+              <span className="text-teal-900 font-medium">MicroSD 32GB: Modal 48.600 (+15rb = 63.600)</span>
+              <div className="flex items-center gap-1 text-teal-800 font-bold">
+                <ArrowRight className="w-2.5 h-2.5 text-teal-400" />
+                <span>Rp 64.000 (Naik)</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between bg-white p-1.5 rounded border border-amber-200">
+              <span className="text-amber-900 font-medium">Powerbank: Modal 84.200 (+15rb = 99.200)</span>
+              <div className="flex items-center gap-1 text-amber-800 font-bold">
+                <ArrowRight className="w-2.5 h-2.5 text-amber-400" />
+                <span>Rp 99.000 (Turun)</span>
+              </div>
+            </div>
             <div className="flex items-center justify-between bg-white p-1.5 rounded border border-purple-200">
-              <span className="text-purple-900 font-medium">Perdana: Modal Rp 35.400 (+5rb = 40.400)</span>
+              <span className="text-purple-900 font-medium">Perdana: Modal 35.400 (+5rb = 40.400)</span>
               <div className="flex items-center gap-1 text-purple-800 font-bold">
                 <ArrowRight className="w-2.5 h-2.5 text-purple-400" />
                 <span>Rp 41.000 (Naik)</span>
               </div>
             </div>
             <div className="flex items-center justify-between bg-white p-1.5 rounded border border-slate-200">
-              <span>Paket 3hr: Modal Rp 18.200 (+2rb = 20.200)</span>
-              <div className="flex items-center gap-1 text-slate-800 font-bold">
-                <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
-                <span>Rp 20.000 (Turun)</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between bg-white p-1.5 rounded border border-slate-200">
-              <span>Paket 30hr: Modal Rp 51.600 (+3rb = 54.600)</span>
+              <span>Paket 30hr: Modal 51.600 (+3rb = 54.600)</span>
               <div className="flex items-center gap-1 text-slate-800 font-bold">
                 <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
                 <span>Rp 55.000 (Naik)</span>
@@ -85,7 +128,7 @@ export const RulesExplainer: React.FC = () => {
             </div>
           </div>
           <p className="text-[10px] text-slate-400 italic">
-            *Otomatis mengenali kata &quot;Perdana&quot; atau &quot;SP&quot; pada nama paket / kolom Excel
+            *Otomatis mengenali &quot;MicroSD&quot;, &quot;Powerbank&quot;, &quot;Perdana&quot;, atau &quot;SP&quot; pada nama produk / Excel
           </p>
         </div>
       )}

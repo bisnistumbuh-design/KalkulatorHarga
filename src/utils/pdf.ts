@@ -54,19 +54,33 @@ export function exportToPdf(
   let tableHeaders: string[];
   let tableRows: (string | number)[][];
 
+  const getProductDisplayLabel = (pkg: CalculatedPackage, isCustomer: boolean): string => {
+    if (pkg.category === 'microsd') {
+      const capTag = pkg.storageCapacity ? ` [MICROSD ${pkg.storageCapacity}]` : ' [MICROSD]';
+      return isCustomer ? `${pkg.name}${capTag}` : `${pkg.name}${capTag} (+${pkg.marginFormatted})`;
+    }
+    if (pkg.category === 'powerbank') {
+      return isCustomer ? `${pkg.name} [POWERBANK]` : `${pkg.name} [POWERBANK +15rb]`;
+    }
+    if (pkg.category === 'perdana' || pkg.isPerdana) {
+      return isCustomer ? `${pkg.name} [PERDANA]` : `${pkg.name} [PERDANA +5rb]`;
+    }
+    return pkg.name;
+  };
+
   if (mode === 'customer') {
-    tableHeaders = ['No', 'Nama Paket / Produk', 'Masa Aktif', 'Harga Jual'];
+    tableHeaders = ['No', 'Nama Produk / Paket', 'Masa Aktif / Kapasitas', 'Harga Jual'];
     tableRows = packages.map((pkg, index) => [
       index + 1,
-      pkg.isPerdana ? `${pkg.name} [PERDANA]` : pkg.name,
+      getProductDisplayLabel(pkg, true),
       pkg.activeDaysFormatted,
       pkg.sellingPriceFormatted,
     ]);
   } else {
     tableHeaders = [
       'No',
-      'Nama Paket / Produk',
-      'Masa Aktif',
+      'Nama Produk / Paket',
+      'Masa Aktif / Kapasitas',
       'Harga Modal',
       'Modal+Untung',
       'Harga Jual',
@@ -74,7 +88,7 @@ export function exportToPdf(
     ];
     tableRows = packages.map((pkg, index) => [
       index + 1,
-      pkg.isPerdana ? `${pkg.name} [PERDANA +5rb]` : pkg.name,
+      getProductDisplayLabel(pkg, false),
       pkg.activeDaysFormatted,
       pkg.costPriceFormatted,
       pkg.totalBeforeRoundingFormatted,
@@ -169,9 +183,15 @@ export function printTableToPrinter(
 
   const rowsHtml = packages
     .map((pkg, idx) => {
-      const displayName = pkg.isPerdana
-        ? `${pkg.name} <span style="font-size: 10px; color: #7e22ce; background: #f3e8ff; padding: 1px 4px; border-radius: 3px; font-weight: 600;">PERDANA</span>`
-        : pkg.name;
+      let badgeHtml = '';
+      if (pkg.category === 'microsd') {
+        badgeHtml = ` <span style="font-size: 10px; color: #0f766e; background: #ccfbf1; padding: 1px 5px; border-radius: 3px; font-weight: 600;">MICROSD ${pkg.storageCapacity || ''}</span>`;
+      } else if (pkg.category === 'powerbank') {
+        badgeHtml = ` <span style="font-size: 10px; color: #b45309; background: #fef3c7; padding: 1px 5px; border-radius: 3px; font-weight: 600;">POWERBANK</span>`;
+      } else if (pkg.category === 'perdana' || pkg.isPerdana) {
+        badgeHtml = ` <span style="font-size: 10px; color: #7e22ce; background: #f3e8ff; padding: 1px 5px; border-radius: 3px; font-weight: 600;">PERDANA</span>`;
+      }
+      const displayName = `${pkg.name}${badgeHtml}`;
 
       if (mode === 'customer') {
         return `
@@ -202,16 +222,16 @@ export function printTableToPrinter(
       ? `
         <tr style="background-color: #047857; color: white;">
           <th style="padding: 8px; border: 1px solid #047857; width: 40px;">No</th>
-          <th style="padding: 8px; border: 1px solid #047857; text-align: left;">Nama Paket Data</th>
-          <th style="padding: 8px; border: 1px solid #047857; width: 100px;">Masa Aktif</th>
+          <th style="padding: 8px; border: 1px solid #047857; text-align: left;">Nama Produk / Paket</th>
+          <th style="padding: 8px; border: 1px solid #047857; width: 110px;">Masa Aktif / Ket</th>
           <th style="padding: 8px; border: 1px solid #047857; text-align: right; width: 140px;">Harga Jual</th>
         </tr>
       `
       : `
         <tr style="background-color: #3730a3; color: white;">
           <th style="padding: 8px; border: 1px solid #3730a3; width: 35px;">No</th>
-          <th style="padding: 8px; border: 1px solid #3730a3; text-align: left;">Nama Paket Data</th>
-          <th style="padding: 8px; border: 1px solid #3730a3; width: 85px;">Masa Aktif</th>
+          <th style="padding: 8px; border: 1px solid #3730a3; text-align: left;">Nama Produk / Paket</th>
+          <th style="padding: 8px; border: 1px solid #3730a3; width: 95px;">Masa Aktif / Ket</th>
           <th style="padding: 8px; border: 1px solid #3730a3; text-align: right; width: 105px;">Harga Modal</th>
           <th style="padding: 8px; border: 1px solid #3730a3; text-align: right; width: 110px;">Modal+Untung</th>
           <th style="padding: 8px; border: 1px solid #3730a3; text-align: right; width: 115px;">Harga Jual</th>
