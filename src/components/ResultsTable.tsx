@@ -15,6 +15,7 @@ import {
   CheckSquare,
   Square,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { CalculatedPackage, ActiveFilterTier, ProductCategory } from '../types';
 import { exportToExcel } from '../utils/excel';
@@ -34,6 +35,7 @@ interface ResultsTableProps {
     storageCapacity?: string
   ) => void;
   onDeleteMultiple?: (ids: string[]) => void;
+  onLoadSample?: () => void;
 }
 
 type SortField = 'original' | 'name' | 'activeDays' | 'costPrice' | 'sellingPrice' | 'actualProfit';
@@ -45,6 +47,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   onDeleteItem,
   onEditItem,
   onDeleteMultiple,
+  onLoadSample,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<ActiveFilterTier>('all');
@@ -89,6 +92,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
       }
       if (filterTier === 'powerbank') {
         return pkg.category === 'powerbank';
+      }
+      if (filterTier === 'aksesoris') {
+        return pkg.category === 'aksesoris';
       }
       if (filterTier === 'perdana') {
         return pkg.category === 'perdana' || pkg.isPerdana;
@@ -193,7 +199,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     return calculateSinglePackage(
       editingPackage.id,
       editName.trim(),
-      editCategory === 'paket' ? editActiveDays : editCapacity,
+      editCategory === 'paket'
+        ? editActiveDays
+        : editCategory === 'microsd'
+        ? editCapacity
+        : editCategory === 'powerbank'
+        ? 'Powerbank'
+        : 'Aksesoris HP',
       editCost,
       editCategory,
       editCategory === 'microsd' ? editCapacity : undefined
@@ -208,7 +220,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     onEditItem(
       editingPackage.id,
       editName.trim(),
-      editCategory === 'paket' ? editActiveDays : editCapacity,
+      editCategory === 'paket'
+        ? editActiveDays
+        : editCategory === 'microsd'
+        ? editCapacity
+        : editCategory === 'powerbank'
+        ? 'Powerbank'
+        : 'Aksesoris HP',
       editCost,
       editCategory,
       editCategory === 'microsd' ? editCapacity : undefined
@@ -236,13 +254,17 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
 
   const handleCopyWhatsApp = () => {
     const lines = [
-      '*DAFTAR HARGA JUAL PAKET DATA & PERDANA*',
+      '*DAFTAR HARGA JUAL PRODUK & PAKET DATA*',
       `Update: ${new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}`,
       '=========================',
     ];
 
     sortedPackages.forEach((pkg, i) => {
-      const tag = pkg.isPerdana ? '⭐ [PERDANA] ' : '';
+      let tag = '';
+      if (pkg.category === 'microsd') tag = '💾 [MICROSD] ';
+      else if (pkg.category === 'powerbank') tag = '🔋 [POWERBANK] ';
+      else if (pkg.category === 'aksesoris') tag = '🎧 [AKSESORIS HP] ';
+      else if (pkg.isPerdana || pkg.category === 'perdana') tag = '⭐ [PERDANA] ';
       lines.push(`${i + 1}. ${tag}*${pkg.name}* (${pkg.activeDaysFormatted}) -> *${pkg.sellingPriceFormatted}*`);
     });
 
@@ -345,6 +367,19 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             </button>
             <button
               type="button"
+              id="filter-aksesoris"
+              onClick={() => setFilterTier('aksesoris')}
+              className={`px-1.5 py-0.5 rounded font-medium transition-all ${
+                filterTier === 'aksesoris'
+                  ? 'bg-orange-600 text-white shadow-2xs font-bold'
+                  : 'text-orange-800 hover:text-orange-900 bg-orange-50 hover:bg-orange-100'
+              }`}
+              title="Kategori Aksesoris HP (Margin Berdasarkan Modal: +3rb, +5rb, +15rb, +20rb)"
+            >
+              Aksesoris HP ({packages.filter((p) => p.category === 'aksesoris').length})
+            </button>
+            <button
+              type="button"
               id="filter-perdana"
               onClick={() => setFilterTier('perdana')}
               className={`px-1.5 py-0.5 rounded font-medium transition-all ${
@@ -414,6 +449,19 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-1.5">
+          {onLoadSample && (
+            <button
+              type="button"
+              id="table-btn-load-sample"
+              onClick={onLoadSample}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 text-[11px] font-semibold hover:bg-indigo-100 transition-colors shadow-2xs cursor-pointer"
+              title="Tampilkan contoh data pada list web"
+            >
+              <Sparkles className="w-3 h-3 text-indigo-600" />
+              <span>Contoh Data</span>
+            </button>
+          )}
+
           <button
             type="button"
             id="btn-copy-wa"
@@ -576,6 +624,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                     ? 'bg-teal-50 text-teal-800 border-teal-200'
                     : pkg.category === 'powerbank'
                     ? 'bg-amber-50 text-amber-800 border-amber-200'
+                    : pkg.category === 'aksesoris'
+                    ? 'bg-orange-50 text-orange-800 border-orange-200'
                     : pkg.category === 'perdana' || pkg.isPerdana
                     ? 'bg-purple-50 text-purple-700 border-purple-200'
                     : pkg.tier === 'tier1'
@@ -625,6 +675,11 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                             Powerbank (+15rb)
                           </span>
                         )}
+                        {pkg.category === 'aksesoris' && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-orange-100 text-orange-800 border border-orange-200">
+                            Aksesoris HP
+                          </span>
+                        )}
                         {(pkg.category === 'perdana' || pkg.isPerdana) && (
                           <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
                             Perdana (+5rb)
@@ -636,6 +691,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                               ? 'text-teal-700 font-semibold'
                               : pkg.category === 'powerbank'
                               ? 'text-amber-700 font-semibold'
+                              : pkg.category === 'aksesoris'
+                              ? 'text-orange-700 font-semibold'
                               : pkg.category === 'perdana' || pkg.isPerdana
                               ? 'text-purple-700 font-semibold'
                               : 'text-slate-400'
@@ -785,7 +842,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                 <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
                   Kategori Produk
                 </label>
-                <div className="grid grid-cols-4 gap-1">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1">
                   <button
                     type="button"
                     onClick={() => setEditCategory('paket')}
@@ -830,8 +887,34 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                   >
                     Powerbank (+15rb)
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditCategory('aksesoris')}
+                    className={`text-[10px] font-semibold py-1.5 px-1 rounded border transition-colors ${
+                      editCategory === 'aksesoris'
+                        ? 'bg-orange-600 text-white border-orange-600 shadow-2xs'
+                        : 'bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100'
+                    }`}
+                  >
+                    Aksesoris HP
+                  </button>
                 </div>
               </div>
+
+              {/* Pilihan Khusus Aksesoris HP */}
+              {editCategory === 'aksesoris' && (
+                <div className="p-2.5 rounded-lg bg-orange-50 border border-orange-200 text-xs">
+                  <div className="font-bold text-orange-900 text-[11px] mb-1">
+                    Aturan Margin Aksesoris Handphone (Sesuai Modal):
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 text-[10px] font-mono text-orange-800">
+                    <div>Modal &le; 10.000: <span className="font-bold">+Rp 3.000</span></div>
+                    <div>10.001 - 20.000: <span className="font-bold">+Rp 5.000</span></div>
+                    <div>20.001 - 75.000: <span className="font-bold">+Rp 15.000</span></div>
+                    <div>&gt; 75.001: <span className="font-bold">+Rp 20.000</span></div>
+                  </div>
+                </div>
+              )}
 
               {/* Nama Produk / Paket */}
               <div>
@@ -958,6 +1041,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                           ? 'text-teal-700'
                           : previewEditedPackage.category === 'powerbank'
                           ? 'text-amber-700'
+                          : previewEditedPackage.category === 'aksesoris'
+                          ? 'text-orange-700'
                           : previewEditedPackage.category === 'perdana'
                           ? 'text-purple-700'
                           : 'text-indigo-700'

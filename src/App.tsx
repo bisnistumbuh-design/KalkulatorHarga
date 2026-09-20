@@ -10,17 +10,62 @@ import { calculateSinglePackage, SAMPLE_PACKAGES_RAW } from './utils/calculator'
 import { exportToExcel } from './utils/excel';
 import { FileSpreadsheet, Sparkles, CheckCircle2, ShieldCheck } from 'lucide-react';
 
+const STORAGE_PACKAGES_KEY = 'konter_pulsa_packages_v4';
+const STORAGE_STATUS_KEY = 'konter_pulsa_status_v4';
+const STORAGE_FILENAME_KEY = 'konter_pulsa_filename_v4';
+
 export default function App() {
-  const [packages, setPackages] = useState<CalculatedPackage[]>([]);
+  const [packages, setPackages] = useState<CalculatedPackage[]>(() => {
+    try {
+      const status = localStorage.getItem(STORAGE_STATUS_KEY);
+      if (status === 'cleared') {
+        return [];
+      }
+      const saved = localStorage.getItem(STORAGE_PACKAGES_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error reading localStorage', e);
+    }
+    return [];
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const [executionTimeMs, setExecutionTimeMs] = useState<number | undefined>(undefined);
-  const [currentFileName, setCurrentFileName] = useState<string | undefined>(undefined);
+  const [currentFileName, setCurrentFileName] = useState<string | undefined>(() => {
+    try {
+      const status = localStorage.getItem(STORAGE_STATUS_KEY);
+      if (status === 'cleared') return undefined;
+      return localStorage.getItem(STORAGE_FILENAME_KEY) || undefined;
+    } catch {
+      return undefined;
+    }
+  });
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Auto-load sample data on startup for immediate view
-  useEffect(() => {
-    loadSampleData(false);
-  }, []);
+  const saveToLocalStorage = (
+    pkgs: CalculatedPackage[],
+    fileName?: string,
+    status?: string
+  ) => {
+    try {
+      localStorage.setItem(STORAGE_PACKAGES_KEY, JSON.stringify(pkgs));
+      if (fileName) {
+        localStorage.setItem(STORAGE_FILENAME_KEY, fileName);
+      } else {
+        localStorage.removeItem(STORAGE_FILENAME_KEY);
+      }
+      if (status) {
+        localStorage.setItem(STORAGE_STATUS_KEY, status);
+      }
+    } catch (e) {
+      console.error('Failed to save to localStorage', e);
+    }
+  };
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -49,9 +94,12 @@ export default function App() {
     setExecutionTimeMs(time);
     setCurrentFileName('Data_Sampel_Konter_Pulsa.xlsx');
     setIsLoading(false);
+    saveToLocalStorage(sampleCalculated, 'Data_Sampel_Konter_Pulsa.xlsx', 'sample');
 
     if (showToast) {
-      showNotification('16 produk sampel (MicroSD, Powerbank, Perdana & Paket) berhasil dimuat!');
+      showNotification(
+        `${sampleCalculated.length} produk contoh (Aksesoris HP, MicroSD, Powerbank, Perdana & Paket) berhasil dimuat!`
+      );
     }
   };
 
@@ -63,11 +111,16 @@ export default function App() {
     setPackages(loadedPackages);
     setCurrentFileName(fileName);
     setExecutionTimeMs(timeMs);
+    saveToLocalStorage(loadedPackages, fileName, 'custom');
     showNotification(`Berhasil memproses ${loadedPackages.length} data dari "${fileName}"`);
   };
 
   const handleAddManualPackage = (newPackage: CalculatedPackage) => {
-    setPackages((prev) => [newPackage, ...prev]);
+    setPackages((prev) => {
+      const next = [newPackage, ...prev];
+      saveToLocalStorage(next, currentFileName, 'custom');
+      return next;
+    });
     showNotification(`"${newPackage.name}" ditambahkan ke daftar!`);
   };
 
@@ -79,8 +132,8 @@ export default function App() {
     categoryOrIsPerdana?: boolean | string,
     storageCapacity?: string
   ) => {
-    setPackages((prev) =>
-      prev.map((pkg) => {
+    setPackages((prev) => {
+      const next = prev.map((pkg) => {
         if (pkg.id === id) {
           return calculateSinglePackage(
             id,
@@ -92,27 +145,54 @@ export default function App() {
           );
         }
         return pkg;
-      })
-    );
+      });
+      saveToLocalStorage(next, currentFileName);
+      return next;
+    });
     showNotification(`"${name}" berhasil diperbarui!`);
   };
 
   const handleDeleteItem = (id: string) => {
-    setPackages((prev) => prev.filter((p) => p.id !== id));
-    showNotification('Paket berhasil dihapus.');
+    setPackages((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      const isNowEmpty = next.length === 0;
+      saveToLocalStorage(
+        next,
+        isNowEmpty ? undefined : currentFileName,
+        isNowEmpty ? 'cleared' : undefined
+      );
+      if (isNowEmpty) {
+        setCurrentFileName(undefined);
+      }
+      return next;
+    });
+    showNotification('Produk berhasil dihapus.');
   };
 
   const handleDeleteMultiple = (ids: string[]) => {
     if (ids.length === 0) return;
-    setPackages((prev) => prev.filter((p) => !ids.includes(p.id)));
-    showNotification(`${ids.length} paket berhasil dihapus.`);
+    setPackages((prev) => {
+      const next = prev.filter((p) => !ids.includes(p.id));
+      const isNowEmpty = next.length === 0;
+      saveToLocalStorage(
+        next,
+        isNowEmpty ? undefined : currentFileName,
+        isNowEmpty ? 'cleared' : undefined
+      );
+      if (isNowEmpty) {
+        setCurrentFileName(undefined);
+      }
+      return next;
+    });
+    showNotification(`${ids.length} produk berhasil dihapus.`);
   };
 
   const handleClearAll = () => {
     setPackages([]);
     setCurrentFileName(undefined);
     setExecutionTimeMs(undefined);
-    showNotification('Semua data paket berhasil dikosongkan.');
+    saveToLocalStorage([], undefined, 'cleared');
+    showNotification('Semua data paket dan produk berhasil dikosongkan.');
   };
 
   const handleExportAll = () => {
@@ -177,6 +257,7 @@ export default function App() {
               onDeleteItem={handleDeleteItem}
               onEditItem={handleEditItem}
               onDeleteMultiple={handleDeleteMultiple}
+              onLoadSample={() => loadSampleData(true)}
             />
           ) : (
             <div className="bg-white border border-slate-200 rounded-lg p-10 text-center shadow-2xs">
@@ -184,20 +265,19 @@ export default function App() {
                 <FileSpreadsheet className="w-5 h-5" />
               </div>
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">
-                Belum Ada Data Paket yang Dimuat
+                Belum Ada Data Produk yang Dimuat
               </h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-3">
-                Unggah file Excel modal supplier Anda melalui kotak upload di sebelah kiri,
-                atau muat data sampel untuk uji coba langsung.
+              <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
+                Daftar produk saat ini kosong. Anda dapat mengunggah file Excel, memasukkan produk melalui kalkulator manual, atau klik tombol di bawah untuk menampilkan contoh data.
               </p>
               <button
                 type="button"
                 id="btn-empty-load-sample"
                 onClick={() => loadSampleData(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-2xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Muat Data Sampel Sekarang</span>
+                <span>Tampilkan Contoh Data</span>
               </button>
             </div>
           )}

@@ -6,7 +6,7 @@ export interface RawPackageRow {
   rawIsPerdana?: any;
 }
 
-export type ProductCategory = 'paket' | 'perdana' | 'microsd' | 'powerbank';
+export type ProductCategory = 'paket' | 'perdana' | 'microsd' | 'powerbank' | 'aksesoris';
 
 export type MicroSdCapacity = '4gb' | '8gb' | '16gb' | '32gb' | '64gb' | '128gb' | 'other';
 
@@ -19,7 +19,11 @@ export type ProductTier =
   | 'microsd_8gb' // MicroSD 8GB (+12rb)
   | 'microsd_16_32gb' // MicroSD 16GB, 32GB (+15rb)
   | 'microsd_64_128gb' // MicroSD 64GB, 128GB (+18rb)
-  | 'powerbank'; // Powerbank (+15rb)
+  | 'powerbank' // Powerbank (+15rb)
+  | 'aksesoris_tier1' // Aksesoris HP Modal <= 10rb (+3rb)
+  | 'aksesoris_tier2' // Aksesoris HP Modal 10.001 - 20rb (+5rb)
+  | 'aksesoris_tier3' // Aksesoris HP Modal 20.001 - 75rb (+15rb)
+  | 'aksesoris_tier4'; // Aksesoris HP Modal > 75rb (+20rb)
 
 export interface CalculatedPackage {
   id: string;
@@ -55,5 +59,6 @@ export type ActiveFilterTier =
   | 'perdana'
   | 'penyimpanan'
   | 'microsd'
-  | 'powerbank';
+  | 'powerbank'
+  | 'aksesoris';
 

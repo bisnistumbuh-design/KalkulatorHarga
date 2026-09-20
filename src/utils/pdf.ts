@@ -62,6 +62,9 @@ export function exportToPdf(
     if (pkg.category === 'powerbank') {
       return isCustomer ? `${pkg.name} [POWERBANK]` : `${pkg.name} [POWERBANK +15rb]`;
     }
+    if (pkg.category === 'aksesoris') {
+      return isCustomer ? `${pkg.name} [AKSESORIS HP]` : `${pkg.name} [AKSESORIS +${pkg.marginFormatted}]`;
+    }
     if (pkg.category === 'perdana' || pkg.isPerdana) {
       return isCustomer ? `${pkg.name} [PERDANA]` : `${pkg.name} [PERDANA +5rb]`;
     }
@@ -188,6 +191,8 @@ export function printTableToPrinter(
         badgeHtml = ` <span style="font-size: 10px; color: #0f766e; background: #ccfbf1; padding: 1px 5px; border-radius: 3px; font-weight: 600;">MICROSD ${pkg.storageCapacity || ''}</span>`;
       } else if (pkg.category === 'powerbank') {
         badgeHtml = ` <span style="font-size: 10px; color: #b45309; background: #fef3c7; padding: 1px 5px; border-radius: 3px; font-weight: 600;">POWERBANK</span>`;
+      } else if (pkg.category === 'aksesoris') {
+        badgeHtml = ` <span style="font-size: 10px; color: #c2410c; background: #ffedd5; padding: 1px 5px; border-radius: 3px; font-weight: 600;">AKSESORIS HP</span>`;
       } else if (pkg.category === 'perdana' || pkg.isPerdana) {
         badgeHtml = ` <span style="font-size: 10px; color: #7e22ce; background: #f3e8ff; padding: 1px 5px; border-radius: 3px; font-weight: 600;">PERDANA</span>`;
       }

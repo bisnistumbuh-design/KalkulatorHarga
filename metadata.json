@@ -1,6 +1,6 @@
 {
   "name": "Kalkulator Harga Jual Paket Data",
-  "description": "Aplikasi kalkulator penentuan harga jual paket data otomatis berdasarkan masa aktif dan pembulatan kustom dari file Excel.",
+  "description": "Kalkulator penentuan harga jual paket data, perdana, MicroSD, powerbank, dan aksesoris HP otomatis dengan pembulatan kustom kelipatan Rp 1.000 dan template Excel terintegrasi.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

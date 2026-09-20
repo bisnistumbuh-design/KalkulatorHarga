@@ -30,6 +30,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
   const countPerdana = packages.filter((p) => p.category === 'perdana' || p.isPerdana).length;
   const countMicroSd = packages.filter((p) => p.category === 'microsd').length;
   const countPowerbank = packages.filter((p) => p.category === 'powerbank').length;
+  const countAksesoris = packages.filter((p) => p.category === 'aksesoris').length;
 
   return (
     <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
@@ -84,6 +85,11 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             {countPowerbank > 0 && (
               <span className="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-semibold" title="Powerbank (+15rb)">
                 {countPowerbank} Powerbank (+15rb)
+              </span>
+            )}
+            {countAksesoris > 0 && (
+              <span className="bg-orange-50 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-semibold" title="Aksesoris Handphone (Sesuai Harga Modal)">
+                {countAksesoris} Aksesoris HP
               </span>
             )}
             {countPerdana > 0 && (

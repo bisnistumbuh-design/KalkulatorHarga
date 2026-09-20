@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, Plus, HardDrive, BatteryCharging, Radio, Smartphone } from 'lucide-react';
+import { Calculator, Plus, HardDrive, BatteryCharging, Radio, Smartphone, Headphones } from 'lucide-react';
 import { calculateSinglePackage, extractMicroSdCapacity } from '../utils/calculator';
 import { CalculatedPackage, ProductCategory, MicroSdCapacity } from '../types';
 
@@ -54,6 +54,31 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
       setCategory('perdana');
       return;
     }
+
+    // Aksesoris Handphone detection
+    if (
+      lower.includes('kabel') ||
+      lower.includes('charger') ||
+      lower.includes('casan') ||
+      lower.includes('batok') ||
+      lower.includes('adaptor') ||
+      lower.includes('headset') ||
+      lower.includes('earphone') ||
+      lower.includes('handsfree') ||
+      lower.includes('tws') ||
+      lower.includes('tempered glass') ||
+      lower.includes('anti gores') ||
+      lower.includes('case') ||
+      lower.includes('casing') ||
+      lower.includes('holder') ||
+      lower.includes('tripod') ||
+      lower.includes('tongsis') ||
+      lower.includes('aksesoris') ||
+      /\bacc\b/i.test(lower)
+    ) {
+      setCategory('aksesoris');
+      return;
+    }
   };
 
   // Instant calculation for live preview
@@ -66,8 +91,16 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
         ? 'Powerbank Robot 10000mAh'
         : category === 'perdana'
         ? 'Kartu Perdana Telkomsel 14GB'
+        : category === 'aksesoris'
+        ? 'Kabel Data Fast Charging 2.4A'
         : 'Paket Data Telkomsel 10GB'),
-    category === 'microsd' ? microSdCapacity : category === 'powerbank' ? 'Aksesoris' : activeDaysInput,
+    category === 'microsd'
+      ? microSdCapacity
+      : category === 'powerbank'
+      ? 'Powerbank'
+      : category === 'aksesoris'
+      ? 'Aksesoris HP'
+      : activeDaysInput,
     costInput,
     category,
     category === 'microsd' ? microSdCapacity : undefined
@@ -81,11 +114,19 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
         (category === 'microsd'
           ? `MicroSD ${microSdCapacity}`
           : category === 'powerbank'
-          ? 'Powerbank Aksesoris'
+          ? 'Powerbank Robot'
           : category === 'perdana'
           ? 'Kartu Perdana'
+          : category === 'aksesoris'
+          ? 'Aksesoris Handphone'
           : 'Paket Data'),
-      category === 'microsd' ? microSdCapacity : category === 'powerbank' ? 'Aksesoris' : activeDaysInput,
+      category === 'microsd'
+        ? microSdCapacity
+        : category === 'powerbank'
+        ? 'Powerbank'
+        : category === 'aksesoris'
+        ? 'Aksesoris HP'
+        : activeDaysInput,
       costInput,
       category,
       category === 'microsd' ? microSdCapacity : undefined
@@ -156,6 +197,19 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
             <BatteryCharging className="w-2.5 h-2.5" />
             <span>Powerbank (+15rb)</span>
           </button>
+          <button
+            type="button"
+            id="toggle-cat-aksesoris"
+            onClick={() => setCategory('aksesoris')}
+            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+              category === 'aksesoris'
+                ? 'bg-orange-600 text-white shadow-2xs'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Headphones className="w-2.5 h-2.5" />
+            <span>Aksesoris HP</span>
+          </button>
         </div>
       </div>
 
@@ -198,6 +252,54 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
         </div>
       )}
 
+      {/* Guide Banner for Aksesoris Handphone Tiers */}
+      {category === 'aksesoris' && (
+        <div className="mb-2.5 p-2 bg-orange-50/90 border border-orange-200 rounded flex flex-wrap items-center justify-between gap-1.5 text-[10px]">
+          <div className="font-bold text-orange-950 flex items-center gap-1">
+            <Headphones className="w-3 h-3 text-orange-600" />
+            <span>Aturan Margin Aksesoris Handphone (Berdasarkan Harga Modal):</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1 font-mono text-[10px]">
+            <span
+              className={`px-1.5 py-0.5 rounded border transition-colors ${
+                previewPkg.tier === 'aksesoris_tier1'
+                  ? 'bg-orange-600 text-white border-orange-600 font-bold shadow-2xs'
+                  : 'bg-white text-orange-800 border-orange-200'
+              }`}
+            >
+              Modal &le;10rb (+3.000)
+            </span>
+            <span
+              className={`px-1.5 py-0.5 rounded border transition-colors ${
+                previewPkg.tier === 'aksesoris_tier2'
+                  ? 'bg-orange-600 text-white border-orange-600 font-bold shadow-2xs'
+                  : 'bg-white text-orange-800 border-orange-200'
+              }`}
+            >
+              10rb-20rb (+5.000)
+            </span>
+            <span
+              className={`px-1.5 py-0.5 rounded border transition-colors ${
+                previewPkg.tier === 'aksesoris_tier3'
+                  ? 'bg-orange-600 text-white border-orange-600 font-bold shadow-2xs'
+                  : 'bg-white text-orange-800 border-orange-200'
+              }`}
+            >
+              20rb-75rb (+15.000)
+            </span>
+            <span
+              className={`px-1.5 py-0.5 rounded border transition-colors ${
+                previewPkg.tier === 'aksesoris_tier4'
+                  ? 'bg-orange-600 text-white border-orange-600 font-bold shadow-2xs'
+                  : 'bg-white text-orange-800 border-orange-200'
+              }`}
+            >
+              &gt;75rb (+20.000)
+            </span>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleAdd} className="space-y-2.5">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div>
@@ -218,6 +320,11 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
                   Perdana
                 </span>
               )}
+              {category === 'aksesoris' && (
+                <span className="text-[9px] text-orange-700 font-bold bg-orange-50 px-1 rounded border border-orange-200">
+                  Aksesoris HP
+                </span>
+              )}
             </label>
             <input
               type="text"
@@ -231,6 +338,8 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
                   ? 'misal: Powerbank Robot 10000mAh'
                   : category === 'perdana'
                   ? 'misal: Perdana Telkomsel 14GB'
+                  : category === 'aksesoris'
+                  ? 'misal: Kabel Data Type-C / Charger 20W'
                   : 'misal: Telkomsel Flash 10GB'
               }
               className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
@@ -242,7 +351,9 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
               {category === 'microsd'
                 ? 'Kapasitas / Varian'
                 : category === 'powerbank'
-                ? 'Keterangan'
+                ? 'Kategori'
+                : category === 'aksesoris'
+                ? 'Kategori'
                 : 'Masa Aktif (B)'}
             </label>
             <input
@@ -252,14 +363,16 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
                 category === 'microsd'
                   ? microSdCapacity
                   : category === 'powerbank'
-                  ? 'Aksesoris'
+                  ? 'Powerbank'
+                  : category === 'aksesoris'
+                  ? 'Aksesoris HP'
                   : activeDaysInput
               }
               onChange={(e) => {
                 if (category === 'microsd') setMicroSdCapacity(e.target.value);
                 else setActiveDaysInput(e.target.value);
               }}
-              disabled={category === 'powerbank'}
+              disabled={category === 'powerbank' || category === 'aksesoris'}
               placeholder="misal: 30 hari / 32GB"
               className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 font-mono disabled:bg-slate-100 disabled:text-slate-500"
             />
@@ -298,6 +411,8 @@ export const QuickCalculator: React.FC<QuickCalculatorProps> = ({ onAddPackage }
                   ? 'text-amber-700 bg-amber-50 border-amber-200'
                   : category === 'perdana'
                   ? 'text-purple-700 bg-purple-50 border-purple-200'
+                  : category === 'aksesoris'
+                  ? 'text-orange-700 bg-orange-50 border-orange-200'
                   : 'text-indigo-700 bg-indigo-50 border-indigo-200'
               }`}
             >

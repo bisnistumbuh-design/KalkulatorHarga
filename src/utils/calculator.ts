@@ -70,15 +70,17 @@ export function isPerdanaProduct(name: any, explicitFlag?: boolean | string): bo
  * Ekstraksi kapasitas memori MicroSD dari teks nama (misal: "4GB", "32 GB")
  */
 export function extractMicroSdCapacity(name: any, explicitCapacity?: string): string | undefined {
-  if (explicitCapacity && explicitCapacity.trim()) {
-    const cleaned = explicitCapacity.trim().toUpperCase();
-    if (cleaned.includes('4GB') || cleaned === '4') return '4GB';
-    if (cleaned.includes('8GB') || cleaned === '8') return '8GB';
-    if (cleaned.includes('16GB') || cleaned === '16') return '16GB';
-    if (cleaned.includes('32GB') || cleaned === '32') return '32GB';
-    if (cleaned.includes('64GB') || cleaned === '64') return '64GB';
-    if (cleaned.includes('128GB') || cleaned === '128') return '128GB';
-    return cleaned;
+  if (explicitCapacity && String(explicitCapacity).trim()) {
+    const normalized = String(explicitCapacity).trim().toUpperCase().replace(/\s+/g, '');
+    if (normalized.includes('4GB') || normalized === '4') return '4GB';
+    if (normalized.includes('8GB') || normalized === '8') return '8GB';
+    if (normalized.includes('16GB') || normalized === '16') return '16GB';
+    if (normalized.includes('32GB') || normalized === '32') return '32GB';
+    if (normalized.includes('64GB') || normalized === '64') return '64GB';
+    if (normalized.includes('128GB') || normalized === '128') return '128GB';
+    if (normalized.includes('256GB') || normalized === '256') return '256GB';
+    if (normalized.includes('512GB') || normalized === '512') return '512GB';
+    if (/^\d+GB$/.test(normalized)) return normalized;
   }
   if (!name) return undefined;
   const str = String(name);
@@ -99,7 +101,8 @@ export function extractMicroSdCapacity(name: any, explicitCapacity?: string): st
 export function detectProductCategory(
   name: any,
   explicitCategory?: any,
-  isPerdanaFlag?: boolean | string
+  isPerdanaFlag?: boolean | string,
+  rawCapacityOrActive?: any
 ): {
   category: ProductCategory;
   categoryLabel: string;
@@ -107,12 +110,22 @@ export function detectProductCategory(
 } {
   const nameStr = String(name || '');
   const lower = nameStr.toLowerCase();
+  const rawActiveStr = String(rawCapacityOrActive || '').trim().toLowerCase();
 
   // 1. Periksa kategori eksplisit jika ada
   if (explicitCategory) {
     const exp = String(explicitCategory).toLowerCase().trim();
-    if (exp === 'microsd' || exp.includes('microsd') || exp.includes('micro sd') || exp.includes('penyimpanan') || exp.includes('memory') || exp.includes('memori')) {
-      const cap = extractMicroSdCapacity(nameStr);
+    if (
+      exp === 'microsd' ||
+      exp.includes('microsd') ||
+      exp.includes('micro sd') ||
+      exp.includes('penyimpanan') ||
+      exp.includes('memory') ||
+      exp.includes('memori')
+    ) {
+      const cap =
+        extractMicroSdCapacity(nameStr) ||
+        extractMicroSdCapacity(rawCapacityOrActive, rawCapacityOrActive);
       return {
         category: 'microsd',
         categoryLabel: cap ? `MicroSD ${cap}` : 'MicroSD (Penyimpanan)',
@@ -123,6 +136,19 @@ export function detectProductCategory(
       return {
         category: 'powerbank',
         categoryLabel: 'Powerbank',
+      };
+    }
+    if (
+      exp === 'aksesoris' ||
+      exp.includes('aksesoris') ||
+      exp.includes('accessories') ||
+      exp.includes('acc') ||
+      exp === 'hp' ||
+      exp.includes('handphone')
+    ) {
+      return {
+        category: 'aksesoris',
+        categoryLabel: 'Aksesoris HP',
       };
     }
     if (exp === 'perdana' || exp.includes('perdana')) {
@@ -147,7 +173,7 @@ export function detectProductCategory(
     };
   }
 
-  // 3. Deteksi otomatis dari nama produk
+  // 3. Deteksi otomatis dari nama produk atau kapasitas/kategori
   // Cek MicroSD
   if (
     lower.includes('microsd') ||
@@ -157,9 +183,12 @@ export function detectProductCategory(
     lower.includes('memory card') ||
     lower.includes('memori card') ||
     lower.includes('kartu memori') ||
-    lower.includes('tf card')
+    lower.includes('tf card') ||
+    rawActiveStr.includes('microsd')
   ) {
-    const cap = extractMicroSdCapacity(nameStr);
+    const cap =
+      extractMicroSdCapacity(nameStr) ||
+      extractMicroSdCapacity(rawCapacityOrActive, rawCapacityOrActive);
     return {
       category: 'microsd',
       categoryLabel: cap ? `MicroSD ${cap}` : 'MicroSD (Penyimpanan)',
@@ -172,11 +201,56 @@ export function detectProductCategory(
     lower.includes('powerbank') ||
     lower.includes('power bank') ||
     /\bpower\s*bank\b/i.test(lower) ||
-    /\bpb\b/i.test(lower)
+    /\bpb\b/i.test(lower) ||
+    (rawActiveStr === 'powerbank' && (lower.includes('robot') || lower.includes('vivan') || lower.includes('mah')))
   ) {
     return {
       category: 'powerbank',
       categoryLabel: 'Powerbank',
+    };
+  }
+
+  // Cek Aksesoris Handphone
+  if (
+    lower.includes('kabel') ||
+    lower.includes('cable') ||
+    lower.includes('charger') ||
+    lower.includes('casan') ||
+    lower.includes('batok') ||
+    lower.includes('adaptor') ||
+    lower.includes('adapter') ||
+    lower.includes('headset') ||
+    lower.includes('earphone') ||
+    lower.includes('headphone') ||
+    lower.includes('handsfree') ||
+    lower.includes('tws') ||
+    lower.includes('tempered glass') ||
+    lower.includes('anti gores') ||
+    lower.includes('antigores') ||
+    lower.includes('casing') ||
+    lower.includes('case') ||
+    lower.includes('softcase') ||
+    lower.includes('hardcase') ||
+    lower.includes('silikon') ||
+    lower.includes('holder') ||
+    lower.includes('stand hp') ||
+    lower.includes('ring hp') ||
+    lower.includes('ring light') ||
+    lower.includes('tongsis') ||
+    lower.includes('tripod') ||
+    lower.includes('otg') ||
+    lower.includes('lanyard') ||
+    lower.includes('pop socket') ||
+    lower.includes('popsocket') ||
+    lower.includes('pelindung kabel') ||
+    lower.includes('aksesoris') ||
+    /\bacc\b/i.test(lower) ||
+    rawActiveStr.includes('aksesoris') ||
+    rawActiveStr.includes('acc')
+  ) {
+    return {
+      category: 'aksesoris',
+      categoryLabel: 'Aksesoris HP',
     };
   }
 
@@ -189,6 +263,11 @@ export function detectProductCategory(
 
 /**
  * Aturan Penambahan Keuntungan (Margin) Lengkap:
+ * - Kategori Aksesoris Handphone:
+ *   - Harga Modal <= 10.000: Modal + Rp 3.000
+ *   - Harga Modal 10.001 - 20.000: Modal + Rp 5.000
+ *   - Harga Modal 20.001 - 75.000: Modal + Rp 15.000
+ *   - Harga Modal > 75.000 (diatas 75.001): Modal + Rp 20.000
  * - Kategori Penyimpanan (MicroSD):
  *   - 4GB: Modal + Rp 10.000
  *   - 8GB: Modal + Rp 12.000
@@ -205,11 +284,25 @@ export function detectProductCategory(
 export function calculateMargin(
   activeDays: number,
   category: ProductCategory = 'paket',
-  storageCapacity?: string
+  storageCapacity?: string,
+  costPrice: number = 0
 ): {
   margin: number;
   tier: ProductTier;
 } {
+  // Aturan Aksesoris Handphone
+  if (category === 'aksesoris') {
+    if (costPrice <= 10000) {
+      return { margin: 3000, tier: 'aksesoris_tier1' };
+    } else if (costPrice <= 20000) {
+      return { margin: 5000, tier: 'aksesoris_tier2' };
+    } else if (costPrice <= 75000) {
+      return { margin: 15000, tier: 'aksesoris_tier3' };
+    } else {
+      return { margin: 20000, tier: 'aksesoris_tier4' };
+    }
+  }
+
   if (category === 'microsd') {
     const cap = (storageCapacity || '').toUpperCase().trim();
     if (cap === '4GB') {
@@ -303,13 +396,14 @@ export function calculateSinglePackage(
   const { category, categoryLabel, storageCapacity: detectedCapacity } = detectProductCategory(
     name,
     explicitCategory,
-    isPerdanaFlag
+    isPerdanaFlag,
+    rawCapacity || rawActiveDays
   );
 
   const finalCapacity = rawCapacity || detectedCapacity;
   const activeDays = extractActiveDays(rawActiveDays);
   const costPrice = parseCostPrice(rawCost);
-  const { margin, tier } = calculateMargin(activeDays, category, finalCapacity);
+  const { margin, tier } = calculateMargin(activeDays, category, finalCapacity, costPrice);
   const totalBeforeRounding = costPrice + margin;
   const rounding = calculateCustomRounding(totalBeforeRounding);
   const actualProfit = rounding.sellingPrice - costPrice;
@@ -318,7 +412,9 @@ export function calculateSinglePackage(
   if (category === 'microsd') {
     activeDaysFormatted = finalCapacity || 'Penyimpanan';
   } else if (category === 'powerbank') {
-    activeDaysFormatted = 'Aksesoris';
+    activeDaysFormatted = 'Powerbank';
+  } else if (category === 'aksesoris') {
+    activeDaysFormatted = 'Aksesoris HP';
   }
 
   return {
@@ -360,8 +456,18 @@ export const SAMPLE_PACKAGES_RAW = [
   { name: 'MicroSD Samsung Evo Plus 128GB 130MB/s', active: '128GB', cost: 124800, category: 'microsd', capacity: '128GB' },
 
   // Kategori Aksesoris: Powerbank (+15rb)
-  { name: 'Powerbank Robot RT180 10000mAh Dual Input', active: 'Aksesoris', cost: 84200, category: 'powerbank' },
-  { name: 'Powerbank Vivan VPB-W10 10000mAh Fast Charge', active: 'Aksesoris', cost: 138500, category: 'powerbank' },
+  { name: 'Powerbank Robot RT180 10000mAh Dual Input', active: 'Powerbank', cost: 84200, category: 'powerbank' },
+  { name: 'Powerbank Vivan VPB-W10 10000mAh Fast Charge', active: 'Powerbank', cost: 138500, category: 'powerbank' },
+
+  // Kategori Aksesoris Handphone (Aturan Modal: <10rb +3rb, 10-20rb +5rb, 20-75rb +15rb, >75rb +20rb)
+  { name: 'Kabel Data Type-C Fast Charge 2.4A 1m', active: 'Aksesoris HP', cost: 7500, category: 'aksesoris' },
+  { name: 'Tempered Glass 9D Full Glue Premium', active: 'Aksesoris HP', cost: 9200, category: 'aksesoris' },
+  { name: 'Handsfree Earphone Bass 3.5mm Universal', active: 'Aksesoris HP', cost: 14800, category: 'aksesoris' },
+  { name: 'Case Silikon Softcase Pelindung Kamera', active: 'Aksesoris HP', cost: 18200, category: 'aksesoris' },
+  { name: 'Batok Charger Quick Charge 3.0 18W Robot', active: 'Aksesoris HP', cost: 38500, category: 'aksesoris' },
+  { name: 'Phone Holder Dashboard Mobil Robot RT-CH06', active: 'Aksesoris HP', cost: 44000, category: 'aksesoris' },
+  { name: 'TWS Bluetooth Earphone Robot Airbuds T20', active: 'Aksesoris HP', cost: 89400, category: 'aksesoris' },
+  { name: 'Wireless Fast Charging Pad 15W Qi-Certified', active: 'Aksesoris HP', cost: 98200, category: 'aksesoris' },
 
   // Kategori Kartu Perdana (+5rb)
   { name: 'Perdana Telkomsel Kuota 14GB Segel', active: '30 hari', cost: 35000, category: 'perdana' },

@@ -46,10 +46,10 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             id="header-btn-sample"
             onClick={onLoadSample}
-            className="hidden md:inline-flex items-center gap-1.5 bg-white border border-slate-300 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-md hover:bg-slate-50 transition-colors shadow-2xs"
-            title="Muat data contoh"
+            className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-md transition-colors shadow-2xs cursor-pointer"
+            title="Tampilkan contoh data pada list web"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
             <span>Contoh Data</span>
           </button>
         )}

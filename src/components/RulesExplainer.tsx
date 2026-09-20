@@ -61,10 +61,26 @@ export const RulesExplainer: React.FC = () => {
           </div>
         </div>
 
-        {/* Rule 4: Aksesoris (Powerbank) */}
+        {/* Rule 4: Aksesoris Handphone */}
+        <div className="border-l-2 border-orange-500 pl-2.5 py-0.5">
+          <div className="font-semibold text-slate-800 text-[11px] flex items-center justify-between">
+            <span>4. Aksesoris Handphone (Berdasarkan Modal)</span>
+            <span className="text-[9px] font-bold text-orange-700 bg-orange-50 px-1 rounded border border-orange-200">
+              Aksesoris HP
+            </span>
+          </div>
+          <div className="text-[10px] text-slate-600 font-mono mt-0.5 grid grid-cols-2 gap-x-2 gap-y-0.5">
+            <div>Modal &le; 10rb: <span className="text-orange-700 font-bold">+Rp 3.000</span></div>
+            <div>10.001 - 20rb: <span className="text-orange-700 font-bold">+Rp 5.000</span></div>
+            <div>20.001 - 75rb: <span className="text-orange-700 font-bold">+Rp 15.000</span></div>
+            <div>&gt; 75.001: <span className="text-orange-700 font-bold">+Rp 20.000</span></div>
+          </div>
+        </div>
+
+        {/* Rule 5: Aksesoris Powerbank */}
         <div className="border-l-2 border-amber-500 pl-2.5 py-0.5">
           <div className="font-semibold text-slate-800 text-[11px] flex items-center justify-between">
-            <span>4. Aksesoris (Powerbank)</span>
+            <span>5. Powerbank</span>
             <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1 rounded border border-amber-200">
               +Rp 15.000
             </span>
@@ -74,10 +90,10 @@ export const RulesExplainer: React.FC = () => {
           </div>
         </div>
 
-        {/* Rule 5: Pembulatan */}
+        {/* Rule 6: Pembulatan */}
         <div className="border-l-2 border-slate-500 pl-2.5 py-0.5">
           <div className="font-semibold text-slate-800 text-[11px]">
-            5. Pembulatan Kustom Ribuan (FR-04)
+            6. Pembulatan Kustom Ribuan (Tetap)
           </div>
           <div className="text-[10px] text-slate-500 font-mono mt-0.5">
             Sisa ratusan ≤ 300: <span className="text-slate-700 font-semibold">Bawah</span> | &gt; 300: <span className="text-emerald-700 font-semibold">Atas</span> (ke kelipatan 1.000)
@@ -119,6 +135,20 @@ export const RulesExplainer: React.FC = () => {
                 <span>Rp 41.000 (Naik)</span>
               </div>
             </div>
+            <div className="flex items-center justify-between bg-white p-1.5 rounded border border-orange-200">
+              <span className="text-orange-950 font-medium">Aksesoris HP: Modal 7.500 (&le;10rb: +3rb = 10.500)</span>
+              <div className="flex items-center gap-1 text-orange-800 font-bold">
+                <ArrowRight className="w-2.5 h-2.5 text-orange-400" />
+                <span>Rp 11.000 (Naik)</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between bg-white p-1.5 rounded border border-orange-200">
+              <span className="text-orange-950 font-medium">Aksesoris HP: Modal 38.500 (20-75rb: +15rb = 53.500)</span>
+              <div className="flex items-center gap-1 text-orange-800 font-bold">
+                <ArrowRight className="w-2.5 h-2.5 text-orange-400" />
+                <span>Rp 54.000 (Naik)</span>
+              </div>
+            </div>
             <div className="flex items-center justify-between bg-white p-1.5 rounded border border-slate-200">
               <span>Paket 30hr: Modal 51.600 (+3rb = 54.600)</span>
               <div className="flex items-center gap-1 text-slate-800 font-bold">
@@ -128,7 +158,7 @@ export const RulesExplainer: React.FC = () => {
             </div>
           </div>
           <p className="text-[10px] text-slate-400 italic">
-            *Otomatis mengenali &quot;MicroSD&quot;, &quot;Powerbank&quot;, &quot;Perdana&quot;, atau &quot;SP&quot; pada nama produk / Excel
+            *Otomatis mengenali &quot;Aksesoris&quot;, &quot;Kabel&quot;, &quot;Charger&quot;, &quot;MicroSD&quot;, &quot;Powerbank&quot;, &quot;Perdana&quot;, dll. pada nama produk / Excel
           </p>
         </div>
       )}
